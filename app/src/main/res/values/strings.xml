@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Self chat</string>
     <string name="action_settings">Settings</string>
+    <string name="location">Геолокация</string>
+    <string name="photo">Фото альбом</string>
+    <string name="camera">Камера</string>
+    <string name="message">Сообщение</string>
 </resources>

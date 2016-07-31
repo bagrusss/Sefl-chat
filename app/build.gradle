@@ -11,6 +11,7 @@ android {
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
+
     }
     buildTypes {
         release {
@@ -35,6 +36,8 @@ dependencies {
     compile "org.jetbrains.anko:anko-appcompat-v7:$anko_version"
     compile "org.jetbrains.anko:anko-recyclerview-v7:$anko_version"
     compile "org.jetbrains.anko:anko-design:$anko_version"
+
+    compile 'com.github.clans:fab:1.6.4'
 
 }
 repositories {

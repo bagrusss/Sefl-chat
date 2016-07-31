@@ -5,7 +5,11 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorAccent">@color/fab_menu_items_color</item>
+
+        <item name="fab_colorNormal">@color/fab_menu_items_color</item>
+        <item name="menu_colorNormal">@color/fab_menu_items_color</item>
+        <item name="menu_colorPressed">@color/fab_menu_color_pressed</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
