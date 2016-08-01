@@ -4,9 +4,11 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="fab_menu_text_color">#212121</color>
+    <color name="status_bar_color">#AA212121</color>
     <color name="fab_menu_items_color">#FF9800</color>
     <color name="fab_menu_color_pressed">#F76B1C</color>
     <color name="fab_menu_fill_color">#CCFFFFFF</color>
     <color name="icons_color">#A3000000</color>
+    <color name="text_hint_color">#9E9E9E</color>
 
 </resources>

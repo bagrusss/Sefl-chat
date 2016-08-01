@@ -29,13 +29,15 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.4.0'
     compile 'com.android.support:design:23.4.0'
+    compile 'com.android.support:cardview-v7:23.4.0'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     compile "org.jetbrains.anko:anko-sdk23:$anko_version"
     compile "org.jetbrains.anko:anko-support-v4:$anko_version"
     compile "org.jetbrains.anko:anko-appcompat-v7:$anko_version"
-    compile "org.jetbrains.anko:anko-recyclerview-v7:$anko_version"
     compile "org.jetbrains.anko:anko-design:$anko_version"
+
+    compile 'com.google.android.gms:play-services-location:8.1.0'
 
     compile 'com.github.clans:fab:1.6.4'
 
