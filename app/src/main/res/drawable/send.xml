@@ -4,6 +4,6 @@
     android:viewportHeight="32.0"
     android:viewportWidth="32.0">
     <path
-        android:fillColor="@color/fab_menu_items_color"
+        android:fillColor="@color/main_yellow_color"
         android:pathData="M2.67,28l28,-12 -28,-12v9.33l20,2.67 -20,2.67v9.33z" />
 </vector>

@@ -5,10 +5,10 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/status_bar_color</item>
-        <item name="colorAccent">@color/fab_menu_items_color</item>
+        <item name="colorAccent">@color/main_yellow_color</item>
 
-        <item name="fab_colorNormal">@color/fab_menu_items_color</item>
-        <item name="menu_colorNormal">@color/fab_menu_items_color</item>
+        <item name="fab_colorNormal">@color/main_yellow_color</item>
+        <item name="menu_colorNormal">@color/main_yellow_color</item>
         <item name="menu_colorPressed">@color/fab_menu_color_pressed</item>
     </style>
 

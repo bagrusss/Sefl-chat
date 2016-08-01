@@ -1,5 +1,10 @@
 package ru.bagrusss.selfchat.activities
 
+import android.app.LoaderManager
+import android.content.Context
+import android.content.CursorLoader
+import android.content.Loader
+import android.database.Cursor
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.RecyclerView
@@ -13,8 +18,10 @@ import com.github.clans.fab.FloatingActionMenu
 import org.jetbrains.anko.find
 import org.jetbrains.anko.inputMethodManager
 import ru.bagrusss.selfchat.R
+import ru.bagrusss.selfchat.adapters.ChatAdapter
 
-class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
+class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
+        LoaderManager.LoaderCallbacks<Cursor> {
 
     var mFabMenu: FloatingActionMenu? = null
     var mFabGeo: FloatingActionButton? = null
@@ -27,6 +34,16 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
     var mMessageView: View? = null
 
     var mRecyclerView: RecyclerView? = null
+    var mAdapter: ChatAdapter? = null
+
+    class ChatLoader : CursorLoader {
+        constructor(c: Context) : super(c) {
+        }
+
+        override fun loadInBackground(): Cursor {
+            return super.loadInBackground()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,12 +69,10 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
             sendMessage(mTextMessage?.text.toString())
             mMessageView?.visibility = View.GONE
             mFabMenu?.showMenu(true)
-            val imm = inputMethodManager
-            imm.hideSoftInputFromWindow(currentFocus.windowToken, 0)
+            inputMethodManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
         }
 
         mMessageView = find(R.id.message_view)
-
     }
 
     override fun onClick(v: View) {
@@ -80,6 +95,18 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher {
             }
         }
         mFabMenu?.close(true)
+    }
+
+    override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
+
+    }
+
+    override fun onLoaderReset(loader: Loader<Cursor>?) {
+
+    }
+
+    override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor>? {
+        return ChatLoader(this)
     }
 
     override fun afterTextChanged(s: Editable?) {
