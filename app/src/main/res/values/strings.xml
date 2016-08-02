@@ -7,5 +7,6 @@
     <string name="message">Сообщение</string>
     <string name="message_hint">Введите текст сообщения</string>
     <string name="temp_time">10:20</string>
+    <string name="select_img">Галерея</string>
     <string name="temp_msg">New Text\ntext</string>
 </resources>

@@ -28,7 +28,7 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
     val sizeX = x
     val sizeY = y
 
-    class ImageTransformation(x: Int, y: Int) : Transformation {
+    inner class ImageTransformation(x: Int, y: Int) : Transformation {
 
         val X = x
         val Y = y
@@ -38,7 +38,7 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
         }
 
         override fun transform(source: Bitmap): Bitmap {
-            val size = Math.max(X, Y) //screen
+            val size = Math.min(X, Y) //screen
             var currentX = source.width
             var currentY = source.height
             var currentMaxSize = Math.max(currentX, currentY)
@@ -57,17 +57,17 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
     }
 
 
-    abstract class BaseHolder(v: View) : RecyclerView.ViewHolder(v) {
+    inner abstract class BaseHolder(v: View) : RecyclerView.ViewHolder(v) {
         var timeDateView: TextView? = null
     }
 
-    open class DateHolder : BaseHolder {
+    inner class DateHolder : BaseHolder {
         constructor(v: View) : super(v) {
             timeDateView = v.find(R.id.date_view)
         }
     }
 
-    open class TextHolder : BaseHolder {
+    inner class TextHolder : BaseHolder {
         var msgText: TextView
 
         constructor(v: View) : super(v) {
@@ -77,7 +77,7 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
 
     }
 
-    open class ImageHolder : BaseHolder {
+    inner class ImageHolder : BaseHolder {
         var image: ImageView
 
         constructor(v: View) : super(v) {

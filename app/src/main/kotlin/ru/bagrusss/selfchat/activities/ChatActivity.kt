@@ -6,8 +6,10 @@ import android.content.CursorLoader
 import android.content.Intent
 import android.content.Loader
 import android.database.Cursor
+import android.graphics.Bitmap
 import android.graphics.Point
 import android.os.Bundle
+import android.provider.MediaStore
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -37,6 +39,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     companion object {
         val REQUEST_CODE = 10
         val PICK_IMAGE_REQUEST = 11
+        val REQUEST_IMAGE_CAPTURE = 12
     }
 
     var mFabMenu: FloatingActionMenu? = null
@@ -124,7 +127,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 selectImg()
             }
             R.id.fab_camera -> {
-
+                makePhoto()
             }
             R.id.fab_text -> {
                 mMessageView?.visibility = View.VISIBLE
@@ -137,18 +140,42 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         mFabMenu?.close(true)
     }
 
+    private fun makePhoto() {
+        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (takePictureIntent.resolveActivity(packageManager) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
+        }
+    }
+
     private fun selectImg() {
         val intent = Intent()
         intent.type = "image/*"
         intent.action = Intent.ACTION_GET_CONTENT
-        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST)
+        startActivityForResult(Intent.createChooser(intent, getString(R.string.select_img)), PICK_IMAGE_REQUEST)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode === PICK_IMAGE_REQUEST && resultCode === RESULT_OK && data != null && data.data != null) {
-            insertImage(data.data.toString())
+        when (requestCode) {
+            PICK_IMAGE_REQUEST -> {
+                if (resultCode === RESULT_OK && data != null && data.data != null) {
+                    insertImage(data.data.toString())
+                }
+            }
+            REQUEST_IMAGE_CAPTURE -> {
+                if (resultCode === RESULT_OK && data != null) {
+                    val extras = data.extras
+                    val bmp = extras.get("data") as Bitmap
+                    saveBitmap(bmp)
+                }
+            }
+
         }
+
+    }
+
+    private fun saveBitmap(bmp: Bitmap) {
+        ServiceHelper.saveBMP(this, bmp, HelperDB.TYPE_IMAGE, getTime(), REQUEST_CODE)
     }
 
     private fun insertImage(uri: String) {

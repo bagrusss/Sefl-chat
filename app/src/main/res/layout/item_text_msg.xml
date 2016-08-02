@@ -14,8 +14,8 @@
         android:id="@+id/text_msg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:gravity="start"
+        android:layout_gravity="start"
+        android:gravity="left"
         android:text="New Text\ntext"
         android:textColor="@color/text_color" />
 
