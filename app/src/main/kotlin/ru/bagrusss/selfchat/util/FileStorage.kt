@@ -14,7 +14,7 @@ object FileStorage {
 
     @JvmStatic
     fun getPathIMG(): String {
-        val file = File(Environment.getExternalStorageDirectory().path + "/selfchat/")
+        val file = File(Environment.getExternalStorageDirectory().path, "selfchat")
         if (!file.exists())
             file.mkdir()
         return file.path
@@ -36,8 +36,7 @@ object FileStorage {
     @Throws(IOException::class)
     fun saveBMPtoStorage(bmp: Bitmap): String? {
         if (isExternalStorageWritable() && isExternalStorageReadable()) {
-            val path = getPathIMG() + bmp.hashCode() + ".jpg"
-            val file = File(path)
+            val file = File(getPathIMG(), bmp.hashCode().toString() + ".jpg")
             FileOutputStream(file).use {
                 bmp.compress(Bitmap.CompressFormat.JPEG, 100, it)
             }
