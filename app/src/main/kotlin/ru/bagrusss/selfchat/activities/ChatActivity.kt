@@ -7,6 +7,7 @@ import android.content.Loader
 import android.database.Cursor
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.text.Editable
 import android.text.TextWatcher
@@ -15,13 +16,25 @@ import android.widget.EditText
 import android.widget.ImageView
 import com.github.clans.fab.FloatingActionButton
 import com.github.clans.fab.FloatingActionMenu
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import org.jetbrains.anko.find
 import org.jetbrains.anko.inputMethodManager
+import org.jetbrains.anko.toast
 import ru.bagrusss.selfchat.R
 import ru.bagrusss.selfchat.adapters.ChatAdapter
+import ru.bagrusss.selfchat.data.HelperDB
+import ru.bagrusss.selfchat.eventbus.Message
+import ru.bagrusss.selfchat.services.ServiceHelper
+import ru.bagrusss.selfchat.util.getTime
 
 class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         LoaderManager.LoaderCallbacks<Cursor> {
+
+    companion object {
+        val REQUEST_CODE = 10
+    }
 
     var mFabMenu: FloatingActionMenu? = null
     var mFabGeo: FloatingActionButton? = null
@@ -36,12 +49,18 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     var mRecyclerView: RecyclerView? = null
     var mAdapter: ChatAdapter? = null
 
+    val KEY_EDITING = "edit_msg"
+
     class ChatLoader : CursorLoader {
+        companion object {
+            val ID = 15
+        }
+
         constructor(c: Context) : super(c) {
         }
 
         override fun loadInBackground(): Cursor {
-            return super.loadInBackground()
+            return HelperDB.getInstance(context).getAllMessages()
         }
     }
 
@@ -66,13 +85,28 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
         mTextMessage?.addTextChangedListener(this)
         mSendButton?.setOnClickListener {
-            sendMessage(mTextMessage?.text.toString())
+            sendMessage(mTextMessage!!.text.toString())
+            mTextMessage!!.setText("")
             mMessageView?.visibility = View.GONE
-            mFabMenu?.showMenu(true)
+            mFabMenu!!.showMenu(true)
             inputMethodManager.hideSoftInputFromWindow(currentFocus.windowToken, 0)
         }
+        mSendButton?.isEnabled = false
 
         mMessageView = find(R.id.message_view)
+        var editing = savedInstanceState?.getBoolean(KEY_EDITING)
+        if (savedInstanceState != null && savedInstanceState.getBoolean(KEY_EDITING)) {
+            mMessageView!!.visibility = View.VISIBLE
+            mFabMenu!!.hideMenuButton(false)
+            if (!"".equals(mTextMessage!!.text.toString())) {
+                mSendButton?.isEnabled = false
+            }
+        }
+        mAdapter = ChatAdapter()
+        val lm = LinearLayoutManager(this@ChatActivity)
+        mRecyclerView?.layoutManager = lm
+        mRecyclerView?.adapter = mAdapter
+        loaderManager.initLoader(ChatLoader.ID, null, this)
     }
 
     override fun onClick(v: View) {
@@ -97,8 +131,13 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         mFabMenu?.close(true)
     }
 
-    override fun onLoadFinished(loader: Loader<Cursor>?, data: Cursor?) {
+    private fun updateChat() {
+        loaderManager.getLoader<Cursor>(ChatLoader.ID).forceLoad()
+    }
 
+    override fun onLoadFinished(loader: Loader<Cursor>?, c: Cursor?) {
+        mAdapter?.swapCursor(c)
+        mRecyclerView?.scrollToPosition(c!!.count - 1)
     }
 
     override fun onLoaderReset(loader: Loader<Cursor>?) {
@@ -116,16 +155,53 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
     }
 
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-
+    override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+        if (s.length == 0) {
+            mSendButton?.isEnabled = false
+        } else {
+            mSendButton?.isEnabled = true
+        }
     }
 
     private fun sendMessage(msg: String) {
+        ServiceHelper.addData(this, msg, HelperDB.TYPE_TEXT, getTime(), REQUEST_CODE)
+    }
+
+    override fun onStart() {
+        EventBus.getDefault().register(this)
+        super.onStart()
+    }
+
+    override fun onStop() {
+        EventBus.getDefault().unregister(this)
+        super.onStop()
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onEvent(m: Message) {
+        if (m.reqCode == REQUEST_CODE && m.status == Message.OK) {
+            toast(android.R.string.ok)
+            updateChat()
+            mFabMenu!!.showMenuButton(false)
+            mSendButton?.isEnabled = false
+        }
 
     }
 
     override fun onBackPressed() {
 
+    }
+
+    override fun onDestroy() {
+        HelperDB.closeDB()
+        super.onDestroy()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (mMessageView!!.visibility === View.VISIBLE) {
+            outState.putBoolean(KEY_EDITING, true)
+        }
     }
 
 }

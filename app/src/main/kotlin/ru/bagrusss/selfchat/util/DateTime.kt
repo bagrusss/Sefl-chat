@@ -7,14 +7,13 @@ import java.util.*
  * Created by bagrusss.
  */
 
-val cal = Calendar.getInstance()!!
 val timeFormat = SimpleDateFormat("HH:mm:ss", Locale("ru"))
 val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("ru"))
 
 fun getTime(): String {
-    return timeFormat.format(cal.time)
+    return timeFormat.format(Date())
 }
 
 fun getDate(): String {
-    return dateFormat.format(cal.time)
+    return dateFormat.format(Date())
 }

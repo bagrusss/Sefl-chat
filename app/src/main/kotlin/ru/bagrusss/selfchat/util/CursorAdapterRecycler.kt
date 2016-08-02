@@ -18,20 +18,21 @@ abstract class CursorAdapterRecycler<VH : RecyclerView.ViewHolder>() : RecyclerV
         mDataValid = cursor != null
         mRowIdColumn = if (mDataValid) mCursor!!.getColumnIndex("_id") else -1
         mDataSetObserver = NotifyingDataSetObserver()
-        if (mCursor != null) {
-            mCursor!!.registerDataSetObserver(mDataSetObserver)
-        }
+
+        mCursor?.registerDataSetObserver(mDataSetObserver)
+
     }
 
     override fun getItemCount(): Int {
         if (mDataValid && mCursor != null) {
-            return mCursor!!.getCount()
+            return mCursor!!.count
         }
         return 0
     }
 
-    fun getCursotAt(position: Int) {
+    fun getCursorAt(position: Int): Cursor? {
         mCursor?.moveToPosition(position)
+        return mCursor
     }
 
     override fun getItemId(position: Int): Long {
@@ -45,16 +46,16 @@ abstract class CursorAdapterRecycler<VH : RecyclerView.ViewHolder>() : RecyclerV
         super.setHasStableIds(true)
     }
 
-    abstract fun onBindViewHolder(viewHolder: VH, cursor: Cursor)
+    abstract fun onBindViewHolder(holder: VH, c: Cursor)
 
-    override fun onBindViewHolder(viewHolder: VH, position: Int) {
+    override fun onBindViewHolder(holder: VH, position: Int) {
         if (!mDataValid) {
             throw IllegalStateException("this should only be called when the cursor is valid")
         }
         if (!mCursor!!.moveToPosition(position)) {
             throw IllegalStateException("couldn't move cursor to position " + position)
         }
-        onBindViewHolder(viewHolder, mCursor!!)
+        onBindViewHolder(holder, mCursor!!)
     }
 
     /**

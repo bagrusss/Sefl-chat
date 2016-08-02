@@ -9,6 +9,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import org.jetbrains.anko.find
 import ru.bagrusss.selfchat.R
+import ru.bagrusss.selfchat.data.HelperDB
 import ru.bagrusss.selfchat.util.CursorAdapterRecycler
 
 /**
@@ -16,9 +17,9 @@ import ru.bagrusss.selfchat.util.CursorAdapterRecycler
  */
 class ChatAdapter : CursorAdapterRecycler<RecyclerView.ViewHolder>() {
 
-    val TYPE_TEXT = 1
-    val TYPE_IMAGE = 2
-    val TYPE_DATE = 3
+    val TYPE_TEXT = HelperDB.TYPE_TEXT
+    val TYPE_IMAGE = HelperDB.TYPE_IMAGE
+    val TYPE_DATE = HelperDB.TYPE_DATE
 
     abstract class BaseHolder(v: View) : RecyclerView.ViewHolder(v) {
         var timeDateView: TextView? = null
@@ -53,12 +54,27 @@ class ChatAdapter : CursorAdapterRecycler<RecyclerView.ViewHolder>() {
         return LayoutInflater.from(parent.context).inflate(res, parent, false)
     }
 
-    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, cursor: Cursor) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, c: Cursor) {
+        val type = c.getInt(c.getColumnIndex(HelperDB.TYPE))
+        when (type) {
+            TYPE_TEXT -> bindText(holder as TextHolder, c)
+            TYPE_DATE -> bindDate(holder as DateHolder, c)
+        }
+    }
+
+    private fun bindDate(holder: DateHolder, c: Cursor) {
+        holder.timeDateView?.text = c.getString(c.getColumnIndex(HelperDB.DATA))
+    }
+
+    fun bindText(holder: TextHolder, c: Cursor) {
+        holder.msgText.text = c.getString(c.getColumnIndex(HelperDB.DATA))
+        holder.timeDateView?.text = c.getString(c.getColumnIndex(HelperDB.TIME))
     }
 
     override fun getItemViewType(position: Int): Int {
-        var c = getCursotAt(position)
-        return super.getItemViewType(position)
+        val c = getCursorAt(position)
+        val type = c!!.getInt(c.getColumnIndex(HelperDB.TYPE))
+        return type
     }
 
     override fun onCreateViewHolder(p: ViewGroup, type: Int): RecyclerView.ViewHolder {
