@@ -39,15 +39,15 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
 
         override fun transform(source: Bitmap): Bitmap {
             val size = Math.min(X, Y) //screen
-            var currentX = source.width
-            var currentY = source.height
+            var currentX = source.width.toDouble()
+            var currentY = source.height.toDouble()
             var currentMaxSize = Math.max(currentX, currentY)
             while (currentMaxSize > size) {
-                currentX /= 2
-                currentY /= 2
+                currentX *= 0.9
+                currentY *= 0.9
                 currentMaxSize = Math.max(currentX, currentY)
             }
-            val res = Bitmap.createScaledBitmap(source, currentX, currentY, false)
+            val res = Bitmap.createScaledBitmap(source, currentX.toInt(), currentY.toInt(), false)
             if (res != source) {
                 source.recycle()
             }
@@ -102,8 +102,6 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
     private fun bindImg(holder: ImageHolder, c: Cursor) {
         holder.timeDateView?.text = c.getString(c.getColumnIndex(HelperDB.TIME))
         val file = c.getString(c.getColumnIndex(HelperDB.DATA))
-        val width = holder.image.measuredWidth
-        val height = holder.image.measuredHeight
         Picasso.with(holder.image.context)
                 .load(Uri.parse(file))
                 .error(R.drawable.album_grey)

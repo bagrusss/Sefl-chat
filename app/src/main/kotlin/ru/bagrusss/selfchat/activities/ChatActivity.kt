@@ -40,6 +40,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         val REQUEST_CODE = 10
         val PICK_IMAGE_REQUEST = 11
         val REQUEST_IMAGE_CAPTURE = 12
+        val REQUEST_LOCATION = 13
     }
 
     var mFabMenu: FloatingActionMenu? = null
@@ -100,7 +101,6 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         mSendButton?.isEnabled = false
 
         mMessageView = find(R.id.message_view)
-        var editing = savedInstanceState?.getBoolean(KEY_EDITING)
         if (savedInstanceState != null && savedInstanceState.getBoolean(KEY_EDITING)) {
             mMessageView!!.visibility = View.VISIBLE
             mFabMenu!!.hideMenuButton(false)
@@ -121,7 +121,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     override fun onClick(v: View) {
         when (v.id) {
             R.id.fab_geo -> {
-
+                selectLocation()
             }
             R.id.fab_album -> {
                 selectImg()
@@ -138,6 +138,10 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
             }
         }
         mFabMenu?.close(true)
+    }
+
+    private fun selectLocation() {
+        startActivityForResult(Intent(this, MapActivity::class.java), REQUEST_LOCATION)
     }
 
     private fun makePhoto() {
@@ -168,6 +172,9 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                     val bmp = extras.get("data") as Bitmap
                     saveBitmap(bmp)
                 }
+            }
+            REQUEST_LOCATION -> {
+
             }
 
         }
@@ -236,10 +243,6 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
             mFabMenu!!.showMenuButton(false)
             mSendButton?.isEnabled = false
         }
-
-    }
-
-    override fun onBackPressed() {
 
     }
 

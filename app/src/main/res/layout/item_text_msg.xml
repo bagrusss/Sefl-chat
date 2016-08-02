@@ -1,33 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_gravity="end"
     android:layout_marginBottom="@dimen/item_margin"
     android:layout_marginLeft="@dimen/msg_left_dimen"
     android:layout_marginStart="@dimen/msg_left_dimen"
-    android:background="@drawable/bubble"
-    android:gravity="end"
-    android:orientation="vertical">
+    android:background="@android:color/transparent">
 
-    <TextView
-        android:id="@+id/text_msg"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="start"
-        android:gravity="left"
-        android:text="New Text\ntext"
-        android:textColor="@color/text_color" />
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/bubble"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/time_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:gravity="end"
-        android:text="@string/temp_time"
-        android:textColor="@color/main_yellow_color"
-        android:textSize="@dimen/time_text_size"
-        android:textStyle="bold" />
+        <TextView
+            android:id="@+id/text_msg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:gravity="left"
+            android:text="New Text\ntext"
+            android:textColor="@color/text_color" />
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/time_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:gravity="end"
+            android:text="@string/temp_time"
+            android:textColor="@color/main_yellow_color"
+            android:textSize="@dimen/time_text_size"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+
+</RelativeLayout>
