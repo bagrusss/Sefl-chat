@@ -22,6 +22,8 @@
             android:layout_gravity="center"
             android:adjustViewBounds="true"
             android:background="@android:color/transparent"
+            android:minHeight="200dp"
+            android:minWidth="200dp"
             android:src="@drawable/album_grey" />
 
         <TextView

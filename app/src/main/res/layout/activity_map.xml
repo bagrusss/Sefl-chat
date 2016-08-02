@@ -28,4 +28,5 @@
         android:src="@drawable/geo"
         fab:fab_label="@string/photo"
         fab:fab_size="normal" />
+
 </RelativeLayout>

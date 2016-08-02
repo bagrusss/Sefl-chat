@@ -9,6 +9,7 @@ import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.Point
 import android.os.Bundle
+import android.os.Handler
 import android.provider.MediaStore
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -57,6 +58,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     var mAdapter: ChatAdapter? = null
 
     val KEY_EDITING = "edit_msg"
+    val h = Handler()
 
     class ChatLoader : CursorLoader {
         companion object {
@@ -75,7 +77,6 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
         mFabMenu = find(R.id.fab_menu)
-
         mFabGeo = find(R.id.fab_geo)
         mFabAlbum = find(R.id.fab_album)
         mFabCamera = find(R.id.fab_camera)
@@ -121,7 +122,9 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     override fun onClick(v: View) {
         when (v.id) {
             R.id.fab_geo -> {
-                selectLocation()
+                h.postDelayed({
+                    selectLocation()
+                }, 1000)
             }
             R.id.fab_album -> {
                 selectImg()
@@ -174,7 +177,9 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 }
             }
             REQUEST_LOCATION -> {
-
+                if (resultCode === RESULT_OK && data != null) {
+                    insertImage(data.data.toString())
+                }
             }
 
         }

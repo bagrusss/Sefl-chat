@@ -7,4 +7,5 @@
     <dimen name="time_text_size">12sp</dimen>
     <dimen name="msg_left_dimen">40dp</dimen>
     <dimen name="item_margin">8dp</dimen>
+    <dimen name="zoom_up">80dp</dimen>
 </resources>

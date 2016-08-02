@@ -38,16 +38,16 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
         }
 
         override fun transform(source: Bitmap): Bitmap {
-            val size = Math.min(X, Y) //screen
-            var currentX = source.width.toDouble()
-            var currentY = source.height.toDouble()
+            val size = Math.max(X, Y) //screen
+            var currentX = source.width
+            var currentY = source.height
             var currentMaxSize = Math.max(currentX, currentY)
             while (currentMaxSize > size) {
-                currentX *= 0.9
-                currentY *= 0.9
+                currentX /= 2
+                currentY /= 2
                 currentMaxSize = Math.max(currentX, currentY)
             }
-            val res = Bitmap.createScaledBitmap(source, currentX.toInt(), currentY.toInt(), false)
+            val res = Bitmap.createScaledBitmap(source, currentX, currentY, false)
             if (res != source) {
                 source.recycle()
             }

@@ -3,7 +3,7 @@ package ru.bagrusss.selfchat.eventbus
 /**
  * Created by bagrusss.
  */
-class Message(rc: Int, stat: Int) {
+open class Message(rc: Int, stat: Int) {
     companion object {
         val OK = 0
         val ERROR = 1
@@ -11,6 +11,4 @@ class Message(rc: Int, stat: Int) {
 
     var status = stat
     var reqCode = rc
-
-
 }
