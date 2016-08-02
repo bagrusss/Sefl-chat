@@ -16,7 +16,7 @@ object ServiceHelper {
         with(intent) {
             putExtra(ProcessorIntentService.PARAM_TIME, time)
             putExtra(ProcessorIntentService.PARAM_TYPE, type)
-            putExtra(ProcessorIntentService.PARAM_MSG, msg)
+            putExtra(ProcessorIntentService.PARAM_DATA, msg)
             putExtra(ProcessorIntentService.PARAM_REQ_CODE, reqCode)
         }
         return intent
@@ -38,7 +38,17 @@ object ServiceHelper {
             action = ProcessorIntentService.ACTION_SAVE_BMP
             context.startService(intent)
         }
+    }
 
+    fun saveBMPCompressed(context: Context, x: Int, y: Int, url: String, type: Int, time: String, reqCode: Int) {
+        val intent = prepareIntent(context, type, null, reqCode, time)
+        with(intent) {
+            action = ProcessorIntentService.ACTION_SAVE_BMP_COMPRESSED
+            putExtra(ProcessorIntentService.PARAM_X, x)
+            putExtra(ProcessorIntentService.PARAM_Y, y)
+            putExtra(ProcessorIntentService.PARAM_DATA, url)
+            context.startService(intent)
+        }
     }
 
 }

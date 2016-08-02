@@ -1,6 +1,7 @@
 package ru.bagrusss.selfchat.activities
 
 import android.app.LoaderManager
+import android.app.ProgressDialog
 import android.content.Context
 import android.content.CursorLoader
 import android.content.Intent
@@ -59,6 +60,10 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     val KEY_EDITING = "edit_msg"
     val h = Handler()
+    var dialog: ProgressDialog? = null
+
+    var mScreenX: Int? = null
+    var mScreenY: Int? = null
 
     class ChatLoader : CursorLoader {
         companion object {
@@ -112,16 +117,20 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         val display = windowManager.defaultDisplay
         val size = Point()
         display.getSize(size)
-        mAdapter = ChatAdapter(size.x, size.y)
+        mScreenX = size.x
+        mScreenY = size.y
+        mAdapter = ChatAdapter(mScreenX!!, mScreenY!!)
         val lm = LinearLayoutManager(this@ChatActivity)
         mRecyclerView?.layoutManager = lm
         mRecyclerView?.adapter = mAdapter
         loaderManager.initLoader(ChatLoader.ID, null, this)
+        dialog = ProgressDialog.show(this, "", getString(R.string.loading), true)
     }
 
     override fun onClick(v: View) {
         when (v.id) {
             R.id.fab_geo -> {
+                dialog?.show()
                 h.postDelayed({
                     selectLocation()
                 }, 1000)
@@ -163,27 +172,28 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            PICK_IMAGE_REQUEST -> {
-                if (resultCode === RESULT_OK && data != null && data.data != null) {
-                    insertImage(data.data.toString())
+        if (resultCode === RESULT_OK)
+            when (requestCode) {
+                PICK_IMAGE_REQUEST -> {
+                    if (data != null && data.data != null) {
+                        insertImage(data.data.toString())
+                    }
                 }
-            }
-            REQUEST_IMAGE_CAPTURE -> {
-                if (resultCode === RESULT_OK && data != null) {
-                    val extras = data.extras
-                    val bmp = extras.get("data") as Bitmap
-                    saveBitmap(bmp)
+                REQUEST_IMAGE_CAPTURE -> {
+                    if (data != null) {
+                        val extras = data.extras
+                        val bmp = extras.get("data") as Bitmap
+                        saveBitmap(bmp)
+                    }
                 }
-            }
-            REQUEST_LOCATION -> {
-                if (resultCode === RESULT_OK && data != null) {
-                    insertImage(data.data.toString())
+                REQUEST_LOCATION -> {
+                    if (data != null) {
+                        insertImage(data.data.toString())
+                    }
                 }
-            }
 
-        }
-
+            }
+        dialog?.dismiss()
     }
 
     private fun saveBitmap(bmp: Bitmap) {
@@ -191,7 +201,8 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     }
 
     private fun insertImage(uri: String) {
-        ServiceHelper.addData(this, uri, HelperDB.TYPE_IMAGE, getTime(), REQUEST_CODE)
+        ServiceHelper.saveBMPCompressed(this, mScreenX!!, mScreenY!!, uri, HelperDB.TYPE_IMAGE,
+                getTime(), REQUEST_CODE)
     }
 
     private fun updateChat() {
@@ -201,6 +212,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     override fun onLoadFinished(loader: Loader<Cursor>?, c: Cursor?) {
         mAdapter?.swapCursor(c)
         mRecyclerView?.scrollToPosition(c!!.count - 1)
+        dialog?.dismiss()
     }
 
     override fun onLoaderReset(loader: Loader<Cursor>?) {
@@ -247,6 +259,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
             updateChat()
             mFabMenu!!.showMenuButton(false)
             mSendButton?.isEnabled = false
+            dialog?.dismiss()
         }
 
     }

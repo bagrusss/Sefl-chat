@@ -15,6 +15,7 @@ import org.jetbrains.anko.find
 import ru.bagrusss.selfchat.R
 import ru.bagrusss.selfchat.data.HelperDB
 import ru.bagrusss.selfchat.util.CursorAdapterRecycler
+import ru.bagrusss.selfchat.util.FileStorage
 
 /**
  * Created by bagrusss.
@@ -38,20 +39,7 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
         }
 
         override fun transform(source: Bitmap): Bitmap {
-            val size = Math.max(X, Y) //screen
-            var currentX = source.width
-            var currentY = source.height
-            var currentMaxSize = Math.max(currentX, currentY)
-            while (currentMaxSize > size) {
-                currentX /= 2
-                currentY /= 2
-                currentMaxSize = Math.max(currentX, currentY)
-            }
-            val res = Bitmap.createScaledBitmap(source, currentX, currentY, false)
-            if (res != source) {
-                source.recycle()
-            }
-            return res
+            return FileStorage.decodeBMPtoScreenSize(X, Y, source)
         }
 
     }
