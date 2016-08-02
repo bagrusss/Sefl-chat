@@ -3,8 +3,10 @@ package ru.bagrusss.selfchat.activities
 import android.app.LoaderManager
 import android.content.Context
 import android.content.CursorLoader
+import android.content.Intent
 import android.content.Loader
 import android.database.Cursor
+import android.graphics.Point
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -34,6 +36,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     companion object {
         val REQUEST_CODE = 10
+        val PICK_IMAGE_REQUEST = 11
     }
 
     var mFabMenu: FloatingActionMenu? = null
@@ -102,7 +105,10 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 mSendButton?.isEnabled = false
             }
         }
-        mAdapter = ChatAdapter()
+        val display = windowManager.defaultDisplay
+        val size = Point()
+        display.getSize(size)
+        mAdapter = ChatAdapter(size.x, size.y)
         val lm = LinearLayoutManager(this@ChatActivity)
         mRecyclerView?.layoutManager = lm
         mRecyclerView?.adapter = mAdapter
@@ -115,7 +121,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
             }
             R.id.fab_album -> {
-
+                selectImg()
             }
             R.id.fab_camera -> {
 
@@ -129,6 +135,24 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
             }
         }
         mFabMenu?.close(true)
+    }
+
+    private fun selectImg() {
+        val intent = Intent()
+        intent.type = "image/*"
+        intent.action = Intent.ACTION_GET_CONTENT
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode === PICK_IMAGE_REQUEST && resultCode === RESULT_OK && data != null && data.data != null) {
+            insertImage(data.data.toString())
+        }
+    }
+
+    private fun insertImage(uri: String) {
+        ServiceHelper.addData(this, uri, HelperDB.TYPE_IMAGE, getTime(), REQUEST_CODE)
     }
 
     private fun updateChat() {
