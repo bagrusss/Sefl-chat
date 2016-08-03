@@ -25,19 +25,17 @@ object ServiceHelper {
 
     @JvmStatic
     fun addData(context: Context, msg: String, type: Int, time: String, reqCode: Int) {
-        val intent = prepareIntent(context, type, msg, reqCode, time)
-        with(intent) {
+        with(prepareIntent(context, type, msg, reqCode, time)) {
             action = ProcessorIntentService.ACTION_ADD_MESSAGE
-            context.startService(intent)
+            context.startService(this)
         }
     }
 
     fun saveBMP(context: Context, bmp: Bitmap, type: Int, time: String, reqCode: Int) {
-        val intent = prepareIntent(context, type, null, reqCode, time)
-        with(intent) {
+        with(prepareIntent(context, type, null, reqCode, time)) {
             putExtra(ProcessorIntentService.PARAM_BMP, bmp)
             action = ProcessorIntentService.ACTION_SAVE_BMP
-            context.startService(intent)
+            context.startService(this)
         }
     }
 
@@ -46,15 +44,28 @@ object ServiceHelper {
         with(intent) {
             action = ProcessorIntentService.ACTION_SAVE_BMP_COMPRESSED
             putExtra(ProcessorIntentService.PARAM_DATA, url)
-            context.startService(intent)
+            context.startService(this)
         }
     }
 
+    @JvmStatic
     fun initRetrofit(context: Context, server: String) {
+        with(Intent(context, ProcessorIntentService::class.java)) {
+            this.putExtra(ProcessorIntentService.PARAM_HTTP_URL, server)
+            this.action = ProcessorIntentService.ACTION_INIT_RETROFIT
+            context.startService(this)
+        }
+
+    }
+
+    @JvmStatic
+    fun updateMessages(context: Context, reqCode: Int) {
         val intent = Intent(context, ProcessorIntentService::class.java)
-        intent.putExtra(ProcessorIntentService.PARAM_HTTP_URL, server)
-        intent.action = ProcessorIntentService.ACTION_INIT_RETROFIT
-        context.startService(intent)
+        with(intent) {
+            action = ProcessorIntentService.ACTION_UPDATE_MESSAGES
+            putExtra(ProcessorIntentService.PARAM_REQ_CODE, reqCode)
+            context.startService(this)
+        }
     }
 
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # vim:fileencoding=utf-8
 
 import datetime
@@ -17,7 +17,7 @@ app.config['STATIC_FOLDER'] = 'static'
 
 
 def current_time():
-    return datetime.datetime.now().strftime("%H%M%S%f")
+    return datetime.datetime.now().strftime("%d%m%y%H%M%S%f")
 
 
 def msg_time():
@@ -31,44 +31,50 @@ def msg_date():
 static_dir = os.path.dirname(os.path.realpath(__file__)) + '/static/'
 
 msgs = []
-
 urls = []
 
 error = """{
-    'status':'error'
+    'status':1
 }"""
 
 status = 'status'
-ok = 'ok'
+ok = 0
 time = 'time'
 date = 'date'
-upload_url = 'upload_url'
+timestamp = 'timestamp'
 
+tp = 'type'
+
+data = 'data'
 up_url = '/static/'
 
-upld = '/upload/'
 
-
-@app.route('/upload/<filename>', methods=['POST'])
-def upload(filename):
+@app.route('/upload', methods=['POST'])
+def upload():
     try:
-        if request.headers['Content-Type'].index('image/') == 0:
-            with open(static_dir + filename, 'w+') as f:
+        content = request.headers['Content-Type']
+        if content.index('image/') == 0:
+            ext = str(content).split("image/")[1]
+            filename = current_time() + '.' + ext
+            with open(static_dir + filename, 'wb') as f:
                 f.write(request.data)
                 f.close()
-            resp = {}
             msg = {}
+            resp = {}
+            dt = {}
             resp[status] = ok
-            msg[time] = resp[time] = msg_time()
-            msg[date] = resp[date] = msg_date()
-            msg['type'] = 2
-            msg['data'] = up_url + filename
+            msg[time] = dt[time] = msg_time()
+            msg[date] = dt[date] = msg_date()
+            msg[timestamp] = dt[timestamp] = int(current_time())
+            msg[tp] = dt[tp] = 2
+            msg[data] = dt[data] = up_url + filename
             msgs.append(msg)
+            resp[data] = dt
             return jsonify(resp)
-
         else:
-            return "415 Unsupported Media Type ;)"
-    except Exception:
+            return "415 Unsupported Media Type"
+    except Exception as e:
+        print(e)
         return error
 
 
@@ -77,33 +83,34 @@ def new():
     js = request.get_json()
     try:
         msg = {}
-        tp = int(js['type'])
-        msg['type'] = tp
-        resp = {status: ok}
-        if tp == 1:
-            text = str(js['text'])
-            resp['text'] = msg['text'] = text
-            msg[time] = resp[time] = msg_time()
-            msg[date] = resp[date] = msg_date()
+        t = int(js[tp])
+        msg[tp] = t
+        resp = {}
+        if t == 1:
+            txt = str(js[data])
+            dt = {}
+            resp[status] = ok
+            msg[time] = dt[time] = msg_time()
+            msg[date] = dt[date] = msg_date()
+            msg[timestamp] = dt[timestamp] = int(current_time())
+            msg[tp] = dt[tp] = 1
+            msg[data] = dt[data] = txt
             msgs.append(msg)
-        elif tp == 2:
-            imgtype = js['img_type']
-            url = upld + current_time() + '.' + imgtype
-            resp[upload_url] = url
-        return jsonify(resp)
+            resp[data] = dt
+            return jsonify(resp)
+        else:
+            return error
     except Exception as e:
-        print (e)
+        print(e)
         return error
 
 
 @app.route('/messages', methods=['GET'])
 def messages():
-    resp = {}
-    resp['data'] = msgs
-    resp[status] = ok
+    resp = {data: msgs, status: ok}
     return jsonify(resp)
 
 
 if __name__ == '__main__':
-    print (sys.argv[1])
+    print(sys.argv[1])
     app.run(app.run(host='0.0.0.0', port=int(sys.argv[1])))

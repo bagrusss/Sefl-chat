@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import ru.bagrusss.selfchat.network.Msg
 
 /**
  * Created by bagrusss.
@@ -33,10 +34,14 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
 
         private val CREATE_TABLE_MESSAGES = """
         CREATE TABLE $TABLE_MESSAGES (
-        $ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        $ID INTEGER PRIMARY KEY,
         $TYPE INTEGER,
         $DATA TEXT,
         $TIME TEXT)
+        """
+
+        private val INSERT = """
+        INSERT OR IGNORE INTO $TABLE_MESSAGES ($ID, $TYPE, $DATA, $TIME) VALUES (?,?,?,?)
         """
 
         fun getInstance(cont: Context): HelperDB {
@@ -72,14 +77,16 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
 
     }
 
-    fun insertData(data: String, date: String, time: String, type: Int) {
-        val c = mDB!!.query(TABLE_MESSAGES, arrayOf(ID),
+    fun insertData(id: Long, data: String, date: String, time: String, type: Int) {
+        mDB!!.query(TABLE_MESSAGES, arrayOf(ID),
                 "$TYPE=? and $DATA=?",
                 arrayOf(TYPE_DATE.toString(), date), null, null, null)
-        if (!c.moveToFirst())
-            insertDate(date)
-        c.close()
+                .use {
+                    if (!it.moveToFirst())
+                        insertDate(date)
+                }
         val cv = ContentValues()
+        cv.put(ID, id)
         cv.put(DATA, data)
         cv.put(TIME, time)
         cv.put(TYPE, type)
@@ -95,6 +102,40 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
 
     fun getAllMessages(): Cursor {
         return mDB!!.query(TABLE_MESSAGES, null, null, null, null, null, null)
+    }
+
+    fun getLastMessageId(): Long {
+        mDB!!.query(TABLE_MESSAGES, arrayOf(ID), null, null, null, null, null).use {
+            if (it.moveToLast())
+                return it.getLong(0)
+        }
+        return 0
+    }
+
+    fun insertMessages(msgs: List<Msg>) {
+        val insert = mDB!!.compileStatement(INSERT)
+        insert.use {
+            for (msg in msgs) {
+                mDB!!.query(TABLE_MESSAGES, arrayOf(ID), "$TYPE=? and $DATA=?",
+                        arrayOf(TYPE_DATE.toString(), msg.date), null, null, null)
+                        .use {
+                            if (!it.moveToFirst()) {
+                                insert.bindLong(1, msg.timestamp)
+                                insert.bindLong(2, TYPE_DATE.toLong())
+                                insert.bindString(3, msg.data)
+                                insert.bindString(4, msg.time)
+                                insert.executeInsert()
+                            }
+
+                        }
+                insert.bindLong(1, msg.timestamp)
+                insert.bindLong(2, msg.type.toLong())
+                insert.bindString(3, msg.data)
+                insert.bindString(4, msg.time)
+                insert.executeInsert()
+            }
+        }
+
     }
 
 }

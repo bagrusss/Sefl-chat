@@ -62,7 +62,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     val KEY_EDITING = "edit_msg"
     val KEY_SERVER = "server"
     val mHandler = Handler()
-    var mDialog: ProgressDialog? = null
+    var mProgressDialog: ProgressDialog? = null
 
     class ChatLoader : CursorLoader {
         companion object {
@@ -124,6 +124,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         val lm = LinearLayoutManager(this)
         mRecyclerView?.layoutManager = lm
         mRecyclerView?.adapter = mAdapter
+
     }
 
     private fun alertServer(c: Context) {
@@ -150,9 +151,16 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 dismiss()
             }
             title(R.string.enter_server)
-        }.show()
+        }
+        serverDialog.cancellable(false)
+        serverDialog.show()
         serverDialog.dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+
+    private fun updateMessages() {
+        mProgressDialog = ProgressDialog.show(this, "", getString(R.string.loading), true)
+        ServiceHelper.updateMessages(this, REQUEST_CODE)
     }
 
     private fun initRetrofit(server: String) {
@@ -162,7 +170,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     override fun onClick(v: View) {
         when (v.id) {
             R.id.fab_geo -> {
-                mDialog?.show()
+                mProgressDialog?.show()
                 mHandler.postDelayed({
                     selectLocation()
                 }, 1000)
@@ -225,7 +233,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 }
 
             }
-        mDialog?.dismiss()
+        mProgressDialog?.dismiss()
     }
 
     private fun saveBitmap(bmp: Bitmap) {
@@ -238,17 +246,16 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     }
 
     private fun updateChat() {
-        val ld = loaderManager
-        val loader = ld.getLoader<Cursor>(ChatLoader.ID)
+        val loader = loaderManager.getLoader<Cursor>(ChatLoader.ID)
         if (loader == null) {
-            ld.initLoader(ChatLoader.ID, null, this)
+            loaderManager.initLoader(ChatLoader.ID, null, this)
         } else loader.forceLoad()
     }
 
-    override fun onLoadFinished(loader: Loader<Cursor>?, c: Cursor?) {
+    override fun onLoadFinished(loader: Loader<Cursor>?, c: Cursor) {
         mAdapter?.swapCursor(c)
-        mRecyclerView?.scrollToPosition(c!!.count - 1)
-        mDialog?.dismiss()
+        mRecyclerView?.scrollToPosition(c.count - 1)
+        mProgressDialog?.dismiss()
     }
 
     override fun onLoaderReset(loader: Loader<Cursor>?) {
@@ -296,12 +303,12 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 updateChat()
                 mFabMenu!!.showMenuButton(false)
                 mSendButton?.isEnabled = false
-                mDialog?.dismiss()
+                mProgressDialog?.dismiss()
                 return
             }
             if (m.status == Message.RETROFIT_READY) {
                 loaderManager.initLoader(ChatLoader.ID, null, this)
-                mDialog = ProgressDialog.show(this, "", getString(R.string.loading), true)
+                updateMessages()
                 return
             }
             toast(m.errorText)
