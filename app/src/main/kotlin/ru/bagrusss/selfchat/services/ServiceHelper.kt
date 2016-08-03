@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 
+
 /**
  * Created by bagrusss.
  */
@@ -40,15 +41,20 @@ object ServiceHelper {
         }
     }
 
-    fun saveBMPCompressed(context: Context, x: Int, y: Int, url: String, type: Int, time: String, reqCode: Int) {
+    fun saveBMPCompressed(context: Context, url: String, type: Int, time: String, reqCode: Int) {
         val intent = prepareIntent(context, type, null, reqCode, time)
         with(intent) {
             action = ProcessorIntentService.ACTION_SAVE_BMP_COMPRESSED
-            putExtra(ProcessorIntentService.PARAM_X, x)
-            putExtra(ProcessorIntentService.PARAM_Y, y)
             putExtra(ProcessorIntentService.PARAM_DATA, url)
             context.startService(intent)
         }
+    }
+
+    fun initRetrofit(context: Context, server: String) {
+        val intent = Intent(context, ProcessorIntentService::class.java)
+        intent.putExtra(ProcessorIntentService.PARAM_HTTP_URL, server)
+        intent.action = ProcessorIntentService.ACTION_INIT_RETROFIT
+        context.startService(intent)
     }
 
 }

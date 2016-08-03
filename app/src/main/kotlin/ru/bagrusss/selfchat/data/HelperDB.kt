@@ -5,7 +5,6 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import ru.bagrusss.selfchat.util.getDate
 
 /**
  * Created by bagrusss.
@@ -73,8 +72,7 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
 
     }
 
-    fun insertData(data: String, time: String, type: Int) {
-        val date = getDate()
+    fun insertData(data: String, date: String, time: String, type: Int) {
         val c = mDB!!.query(TABLE_MESSAGES, arrayOf(ID),
                 "$TYPE=? and $DATA=?",
                 arrayOf(TYPE_DATE.toString(), date), null, null, null)

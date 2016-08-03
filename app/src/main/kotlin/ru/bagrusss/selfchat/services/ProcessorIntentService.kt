@@ -3,10 +3,16 @@ package ru.bagrusss.selfchat.services
 import android.app.IntentService
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Point
 import org.greenrobot.eventbus.EventBus
+import org.jetbrains.anko.windowManager
+import ru.bagrusss.selfchat.R
 import ru.bagrusss.selfchat.data.HelperDB
 import ru.bagrusss.selfchat.eventbus.Message
+import ru.bagrusss.selfchat.network.Net
 import ru.bagrusss.selfchat.util.FileStorage
+import ru.bagrusss.selfchat.util.getDate
+import java.net.SocketTimeoutException
 
 class ProcessorIntentService : IntentService("ProcessorIntentService") {
 
@@ -15,8 +21,9 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
         val ACTION_ADD_MESSAGE = "ru.bagrusss.selfchat.services.action.ACTION_ADD_MESSAGE"
         val ACTION_SAVE_BMP = "ru.bagrusss.selfchat.services.action.ACTION_SAVE_BMP"
         val ACTION_SAVE_BMP_COMPRESSED = "ru.bagrusss.selfchat.services.action.ACTION_SAVE_BMP_COMPRESSED"
+        val ACTION_INIT_RETROFIT = "ru.bagrusss.selfchat.services.action.INIT_RETROFIT"
 
-        val PARAM_DATA = "message"
+        val PARAM_DATA = "text"
         val PARAM_TYPE = "type"
         val PARAM_TIME = "time"
         val PARAM_REQ_CODE = "rq_code"
@@ -24,15 +31,31 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
         val PARAM_BMP = "bmp"
         val PARAM_X = "x"
         val PARAM_Y = "y"
+        val PARAM_HTTP_URL = "http_url"
     }
 
     override fun onHandleIntent(intent: Intent?) {
         if (intent != null) {
             val action = intent.action
             val reqCode = intent.getIntExtra(PARAM_REQ_CODE, 10)
+            val message = Message(reqCode, Message.OK)
             when (action) {
                 ACTION_ADD_MESSAGE -> {
-                    insertToDB(intent)
+                    val msg = intent.getStringExtra(PARAM_DATA)
+                    val type = intent.getIntExtra(PARAM_TYPE, 1)
+                    try {
+                        val (status, date, time) = Net.sendMessageAndParse(type, msg)
+                        if (!"ok".equals(status)) {
+                            message.status = Message.ERROR
+                            HelperDB.getInstance(this).insertData(msg, date!!, time!!, type)
+                        }
+                    } catch (e: Exception) {
+                        if (e is SocketTimeoutException) {
+                            message.status = Message.ERROR
+                            message.errorText = getString(R.string.timeout)
+                        }
+                    }
+
                 }
                 ACTION_SAVE_BMP -> {
                     val bmp = intent.extras.get(PARAM_BMP) as Bitmap
@@ -41,16 +64,29 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
                     insertToDB(intent)
                 }
                 ACTION_SAVE_BMP_COMPRESSED -> {
-                    val x = intent.getIntExtra(PARAM_X, 1)
-                    val y = intent.getIntExtra(PARAM_Y, 1)
+                    windowManager
+                    val display = windowManager.defaultDisplay
+                    val p = Point()
+                    display.getSize(p)
                     var file = intent.getStringExtra(PARAM_DATA)
-                    file = FileStorage.saveCompressed(this, x, y, file)
+                    file = FileStorage.saveCompressed(this, p.x, p.y, file)
                     intent.putExtra(PARAM_DATA, file)
                     insertToDB(intent)
                 }
+                ACTION_INIT_RETROFIT -> {
+                    Net.initAPI(intent.getStringExtra(PARAM_HTTP_URL))
+                    /*try {
+                        val jo = Net.getAPI().messages().execute()
+                        Log.d("jo=", jo.body().toString())
+                        message.status = Message.RETROFIT_READY
+                    } catch (e: Exception) {
+                        message.status = Message.ERROR
+                        message.errorText = getString(R.string.cant_connect)
+                    }*/
+                }
 
             }
-            EventBus.getDefault().post(Message(reqCode, Message.OK))
+            EventBus.getDefault().post(message)
         }
     }
 
@@ -59,8 +95,8 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
         val msg = intent.getStringExtra(PARAM_DATA)
         val type = intent.getIntExtra(PARAM_TYPE, 1)
         val time = intent.getStringExtra(PARAM_TIME)
-        HelperDB.getInstance(this@ProcessorIntentService)
-                .insertData(msg, time, type)
+        HelperDB.getInstance(this)
+                .insertData(msg, getDate(), time, type)
     }
 
 }

@@ -11,6 +11,7 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import android.os.Bundle
 import android.os.Handler
+import android.preference.PreferenceManager
 import android.provider.MediaStore
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -18,16 +19,16 @@ import android.support.v7.widget.RecyclerView
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import com.github.clans.fab.FloatingActionButton
 import com.github.clans.fab.FloatingActionMenu
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import org.jetbrains.anko.find
-import org.jetbrains.anko.inputMethodManager
-import org.jetbrains.anko.toast
+import org.jetbrains.anko.*
 import ru.bagrusss.selfchat.R
 import ru.bagrusss.selfchat.adapters.ChatAdapter
 import ru.bagrusss.selfchat.data.HelperDB
@@ -59,11 +60,9 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     var mAdapter: ChatAdapter? = null
 
     val KEY_EDITING = "edit_msg"
-    val h = Handler()
-    var dialog: ProgressDialog? = null
-
-    var mScreenX: Int? = null
-    var mScreenY: Int? = null
+    val KEY_SERVER = "server"
+    val mHandler = Handler()
+    var mDialog: ProgressDialog? = null
 
     class ChatLoader : CursorLoader {
         companion object {
@@ -107,31 +106,64 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         mSendButton?.isEnabled = false
 
         mMessageView = find(R.id.message_view)
-        if (savedInstanceState != null && savedInstanceState.getBoolean(KEY_EDITING)) {
-            mMessageView!!.visibility = View.VISIBLE
-            mFabMenu!!.hideMenuButton(false)
-            if (!"".equals(mTextMessage!!.text.toString())) {
-                mSendButton?.isEnabled = false
+        if (savedInstanceState != null) {
+            if (savedInstanceState.getBoolean(KEY_EDITING)) {
+                mMessageView!!.visibility = View.VISIBLE
+                mFabMenu!!.hideMenuButton(false)
+                if (!"".equals(mTextMessage!!.text.toString())) {
+                    mSendButton?.isEnabled = false
+                }
             }
+        } else {
+            alertServer(this)
         }
         val display = windowManager.defaultDisplay
-        val size = Point()
-        display.getSize(size)
-        mScreenX = size.x
-        mScreenY = size.y
-        mAdapter = ChatAdapter(mScreenX!!, mScreenY!!)
-        val lm = LinearLayoutManager(this@ChatActivity)
+        val p = Point()
+        display.getSize(p)
+        mAdapter = ChatAdapter(p.x, p.y)
+        val lm = LinearLayoutManager(this)
         mRecyclerView?.layoutManager = lm
         mRecyclerView?.adapter = mAdapter
-        loaderManager.initLoader(ChatLoader.ID, null, this)
-        dialog = ProgressDialog.show(this, "", getString(R.string.loading), true)
+    }
+
+    private fun alertServer(c: Context) {
+        val serverDialog = alert {
+            var e: EditText? = null
+            val preferences = PreferenceManager
+                    .getDefaultSharedPreferences(c)
+            customView {
+                val lp = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT)
+                lp.setMargins(resources.getDimensionPixelOffset(R.dimen.fab_margin),
+                        0, resources.getDimensionPixelOffset(R.dimen.fab_margin), 0)
+                e = editText()
+                e?.layoutParams = lp
+                e!!.setText(preferences.getString(KEY_SERVER, ""))
+            }
+            positiveButton(android.R.string.ok) {
+                val server = e!!.text.toString()
+                preferences.edit()
+                        .putString(KEY_SERVER, server)
+                        .apply()
+                initRetrofit(server)
+                dismiss()
+            }
+            title(R.string.enter_server)
+        }.show()
+        serverDialog.dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+
+    private fun initRetrofit(server: String) {
+        ServiceHelper.initRetrofit(this, server)
     }
 
     override fun onClick(v: View) {
         when (v.id) {
             R.id.fab_geo -> {
-                dialog?.show()
-                h.postDelayed({
+                mDialog?.show()
+                mHandler.postDelayed({
                     selectLocation()
                 }, 1000)
             }
@@ -193,7 +225,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 }
 
             }
-        dialog?.dismiss()
+        mDialog?.dismiss()
     }
 
     private fun saveBitmap(bmp: Bitmap) {
@@ -201,18 +233,22 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     }
 
     private fun insertImage(uri: String) {
-        ServiceHelper.saveBMPCompressed(this, mScreenX!!, mScreenY!!, uri, HelperDB.TYPE_IMAGE,
+        ServiceHelper.saveBMPCompressed(this, uri, HelperDB.TYPE_IMAGE,
                 getTime(), REQUEST_CODE)
     }
 
     private fun updateChat() {
-        loaderManager.getLoader<Cursor>(ChatLoader.ID).forceLoad()
+        val ld = loaderManager
+        val loader = ld.getLoader<Cursor>(ChatLoader.ID)
+        if (loader == null) {
+            ld.initLoader(ChatLoader.ID, null, this)
+        } else loader.forceLoad()
     }
 
     override fun onLoadFinished(loader: Loader<Cursor>?, c: Cursor?) {
         mAdapter?.swapCursor(c)
         mRecyclerView?.scrollToPosition(c!!.count - 1)
-        dialog?.dismiss()
+        mDialog?.dismiss()
     }
 
     override fun onLoaderReset(loader: Loader<Cursor>?) {
@@ -254,14 +290,22 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onEvent(m: Message) {
-        if (m.reqCode == REQUEST_CODE && m.status == Message.OK) {
-            toast(android.R.string.ok)
-            updateChat()
-            mFabMenu!!.showMenuButton(false)
-            mSendButton?.isEnabled = false
-            dialog?.dismiss()
+        if (m.reqCode == REQUEST_CODE) {
+            if (m.status == Message.OK) {
+                toast(android.R.string.ok)
+                updateChat()
+                mFabMenu!!.showMenuButton(false)
+                mSendButton?.isEnabled = false
+                mDialog?.dismiss()
+                return
+            }
+            if (m.status == Message.RETROFIT_READY) {
+                loaderManager.initLoader(ChatLoader.ID, null, this)
+                mDialog = ProgressDialog.show(this, "", getString(R.string.loading), true)
+                return
+            }
+            toast(m.errorText)
         }
-
     }
 
     override fun onDestroy() {
