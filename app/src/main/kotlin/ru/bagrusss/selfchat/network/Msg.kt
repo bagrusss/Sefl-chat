@@ -23,4 +23,8 @@ class Msg {
     @SerializedName("type")
     var type: Int = 1
 
+    override fun toString(): String{
+        return "Msg(data='$data', date='$date', time='$time', timestamp=$timestamp, type=$type)"
+    }
+
 }

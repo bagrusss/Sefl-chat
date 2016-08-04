@@ -5,7 +5,7 @@
     </style>
 
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="android:alertDialogTheme">@style/DialogStyle</item>
+        <item name="alertDialogTheme">@style/DialogStyle</item>
         <item name="dialogTheme">@style/DialogStyle</item>
         <item name="colorPrimary">@color/fab_menu_color_pressed</item>
         <item name="colorPrimaryDark">@color/status_bar_color</item>

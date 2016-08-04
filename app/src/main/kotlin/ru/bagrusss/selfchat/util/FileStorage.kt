@@ -18,11 +18,11 @@ import java.io.IOException
 object FileStorage {
 
     @JvmStatic
-    fun getPathIMG(): String {
-        val file = File(Environment.getExternalStorageDirectory().path, "selfchat")
+    fun getPathIMG(): File {
+        val file = File(Environment.getExternalStorageDirectory().absolutePath, "selfchat")
         if (!file.exists())
             file.mkdir()
-        return file.path
+        return file
     }
 
     @JvmStatic
@@ -53,7 +53,7 @@ object FileStorage {
 
     @JvmStatic
     @Throws(IOException::class)
-    fun saveCompressed(cont: Context, x: Int, y: Int, uri: String): String? {
+    fun compressBMP(cont: Context, x: Int, y: Int, uri: String): String? {
         val oldPath = getRealPathFromURI(cont, Uri.parse(uri))
         val oldFile = File(oldPath)
         var bmp: Bitmap? = null
@@ -76,6 +76,34 @@ object FileStorage {
             newExif.saveAttributes()
         }
         return Uri.fromFile(newFile).toString()
+    }
+
+    @JvmStatic
+    fun compressImg(path: String, maxSize: Int, k: Float): String {
+        val oldFile = File(path)
+        var oldImg: Bitmap? = null
+        val oldExif = ExifInterface(path)
+        val oldWidth = oldExif.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 1)
+        val oldLength = oldExif.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 1)
+        val orientation = oldExif.getAttribute(ExifInterface.TAG_ORIENTATION)
+        val newWidth = maxSize * k
+        val newLength = newWidth / oldWidth * oldLength
+        if (newLength >= oldLength) {
+            return path
+        }
+        FileInputStream(oldFile).use {
+            oldImg = BitmapFactory.decodeStream(it)
+        }
+        val newImg = Bitmap.createScaledBitmap(oldImg, newWidth.toInt(), newLength.toInt(), false)
+        val newPath = path + ".cache"
+        FileOutputStream(File(newPath)).use {
+            newImg.compress(Bitmap.CompressFormat.JPEG, 85, it)
+            oldImg!!.recycle()
+        }
+        val newExif = ExifInterface(newPath)
+        newExif.setAttribute(ExifInterface.TAG_ORIENTATION, orientation)
+        newExif.saveAttributes()
+        return newPath
     }
 
     @JvmStatic
@@ -113,6 +141,11 @@ object FileStorage {
             }
         }
         return result
+    }
+
+    @Throws(Exception::class)
+    fun createTemporaryFile(part: String, ext: String): File {
+        return File(getPathIMG(), part + '.' + ext)
     }
 
 }

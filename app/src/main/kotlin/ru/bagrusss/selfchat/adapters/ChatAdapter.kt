@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import com.squareup.picasso.Callback
 import com.squareup.picasso.Picasso
 import com.squareup.picasso.Transformation
 import org.jetbrains.anko.find
@@ -16,6 +17,7 @@ import ru.bagrusss.selfchat.R
 import ru.bagrusss.selfchat.data.HelperDB
 import ru.bagrusss.selfchat.util.CursorAdapterRecycler
 import ru.bagrusss.selfchat.util.FileStorage
+import java.io.File
 
 /**
  * Created by bagrusss.
@@ -91,10 +93,18 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
         holder.timeDateView?.text = c.getString(c.getColumnIndex(HelperDB.TIME))
         val file = c.getString(c.getColumnIndex(HelperDB.DATA))
         Picasso.with(holder.image.context)
-                .load(Uri.parse(file))
+                .load(Uri.fromFile(File(file)))
                 .error(R.drawable.album_grey)
                 .transform(ImageTransformation(sizeX, sizeY))
-                .into(holder.image)
+                .into(holder.image, object : Callback {
+                    override fun onSuccess() {
+                        holder.image.adjustViewBounds = true
+                    }
+
+                    override fun onError() {
+                        holder.image.adjustViewBounds = false
+                    }
+                })
     }
 
     private fun bindDate(holder: DateHolder, c: Cursor) {

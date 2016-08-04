@@ -13,4 +13,5 @@
     <string name="enter_server">Адрес сервера</string>
     <string name="cant_connect">Cервер недоступен</string>
     <string name="timeout">Долгое время ответа. Возможо у Вас плохое качество связи</string>
+    <string name="storage_error">Ошибка хранилища</string>
 </resources>

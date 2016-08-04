@@ -3,6 +3,7 @@ package ru.bagrusss.selfchat.services
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 
 
 /**
@@ -31,9 +32,9 @@ object ServiceHelper {
         }
     }
 
-    fun saveBMP(context: Context, bmp: Bitmap, type: Int, time: String, reqCode: Int) {
+    fun saveBMP(context: Context, uri: Uri, type: Int, time: String, reqCode: Int) {
         with(prepareIntent(context, type, null, reqCode, time)) {
-            putExtra(ProcessorIntentService.PARAM_BMP, bmp)
+            putExtra(ProcessorIntentService.PARAM_BMP, uri)
             action = ProcessorIntentService.ACTION_SAVE_BMP
             context.startService(this)
         }

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
 import com.github.clans.fab.FloatingActionButton
@@ -13,12 +14,15 @@ import com.google.android.gms.maps.MapFragment
 import com.google.android.gms.maps.OnMapReadyCallback
 import org.jetbrains.anko.find
 import ru.bagrusss.selfchat.R
+import ru.bagrusss.selfchat.fragments.FragmentSplash
 import ru.bagrusss.selfchat.util.FileStorage
 
 class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     var mMap: GoogleMap? = null
     var mFab: FloatingActionButton? = null
+    var mMapFragment: MapFragment? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,13 +33,18 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 saveMapBmp(it)
             })
         }
-        val mapFragment = MapFragment.newInstance()
-        fragmentManager.beginTransaction().replace(R.id.content, mapFragment).commit()
-        mapFragment.getMapAsync(this)
+        fragmentManager.beginTransaction().replace(R.id.content, FragmentSplash()).commit()
+        mFab?.hide(false)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        Handler().postDelayed({
+            mMapFragment = MapFragment.newInstance()
+            fragmentManager.beginTransaction().replace(R.id.content, mMapFragment).commit()
+            mMapFragment!!.getMapAsync(this)
+        }, 1000)
     }
 
     override fun onMapReady(map: GoogleMap) {
+        mFab?.show(false)
         map.uiSettings.isZoomControlsEnabled = true
         map.isMyLocationEnabled = true
         map.isBuildingsEnabled = true

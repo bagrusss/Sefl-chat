@@ -1,10 +1,11 @@
 package ru.bagrusss.selfchat.network
 
-import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 import okhttp3.RequestBody
 import retrofit2.Call
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
 import java.util.*
 
 /**
@@ -18,13 +19,5 @@ interface API {
     @SerializedName("data")
     @GET("messages")
     fun messages(): Call<Response<ArrayList<Msg>>>
-
-/*    @GET("messages")
-    fun messages(): Call<JsonObject>*/
-
-    @Multipart
-    @POST("upload")
-    fun upload(@Header("Content-type") contentType: String,
-               @Part body: RequestBody): Call<JsonObject>
 
 }

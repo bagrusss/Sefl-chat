@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import org.jetbrains.anko.defaultSharedPreferences
 import ru.bagrusss.selfchat.network.Msg
 
 /**
@@ -32,17 +33,7 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
         val TYPE_IMAGE = 2
         val TYPE_DATE = 3
 
-        private val CREATE_TABLE_MESSAGES = """
-        CREATE TABLE $TABLE_MESSAGES (
-        $ID INTEGER PRIMARY KEY,
-        $TYPE INTEGER,
-        $DATA TEXT,
-        $TIME TEXT)
-        """
-
-        private val INSERT = """
-        INSERT OR IGNORE INTO $TABLE_MESSAGES ($ID, $TYPE, $DATA, $TIME) VALUES (?,?,?,?)
-        """
+        private var baseUrl: String? = null
 
         fun getInstance(cont: Context): HelperDB {
             var localInstance = mInstance
@@ -52,6 +43,7 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
                     if (localInstance == null) {
                         localInstance = HelperDB(cont)
                         mInstance = localInstance
+                        baseUrl = cont.defaultSharedPreferences.getString("server", "")
                     }
                 }
             }
@@ -64,6 +56,18 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
             mInstance = null
         }
     }
+
+    private val CREATE_TABLE_MESSAGES = """
+        CREATE TABLE $TABLE_MESSAGES (
+        $ID INTEGER PRIMARY KEY,
+        $TYPE INTEGER,
+        $DATA TEXT,
+        $TIME TEXT)
+        """
+
+    private val INSERT = """
+        INSERT OR IGNORE INTO $TABLE_MESSAGES ($ID, $TYPE, $DATA, $TIME) VALUES (?,?,?,?)
+        """
 
     init {
         mDB = writableDatabase
@@ -83,7 +87,7 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
                 arrayOf(TYPE_DATE.toString(), date), null, null, null)
                 .use {
                     if (!it.moveToFirst())
-                        insertDate(date)
+                        insertDate(date, id-10)
                 }
         val cv = ContentValues()
         cv.put(ID, id)
@@ -93,10 +97,11 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
         mDB!!.insert(TABLE_MESSAGES, null, cv)
     }
 
-    private fun insertDate(date: String) {
+    private fun insertDate(date: String, id: Long) {
         val cv = ContentValues()
         cv.put(DATA, date)
         cv.put(TYPE, TYPE_DATE)
+        cv.put(ID, id)
         mDB!!.insert(TABLE_MESSAGES, null, cv)
     }
 
@@ -120,22 +125,24 @@ class HelperDB private constructor(context: Context) : SQLiteOpenHelper(context,
                         arrayOf(TYPE_DATE.toString(), msg.date), null, null, null)
                         .use {
                             if (!it.moveToFirst()) {
-                                insert.bindLong(1, msg.timestamp)
+                                insert.bindLong(1, msg.timestamp - 10)
                                 insert.bindLong(2, TYPE_DATE.toLong())
-                                insert.bindString(3, msg.data)
+                                insert.bindString(3, msg.date)
                                 insert.bindString(4, msg.time)
                                 insert.executeInsert()
                             }
-
                         }
                 insert.bindLong(1, msg.timestamp)
                 insert.bindLong(2, msg.type.toLong())
-                insert.bindString(3, msg.data)
+                val data: String
+                if (msg.type == TYPE_IMAGE)
+                    data = baseUrl + msg.data
+                else data = msg.data
+                insert.bindString(3, data)
                 insert.bindString(4, msg.time)
                 insert.executeInsert()
             }
         }
-
     }
 
 }

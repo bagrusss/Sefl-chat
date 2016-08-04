@@ -7,17 +7,18 @@ import android.content.CursorLoader
 import android.content.Intent
 import android.content.Loader
 import android.database.Cursor
-import android.graphics.Bitmap
 import android.graphics.Point
+import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
 import android.preference.PreferenceManager
 import android.provider.MediaStore
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -28,13 +29,18 @@ import com.github.clans.fab.FloatingActionMenu
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import org.jetbrains.anko.*
+import org.jetbrains.anko.find
+import org.jetbrains.anko.inputMethodManager
+import org.jetbrains.anko.toast
 import ru.bagrusss.selfchat.R
 import ru.bagrusss.selfchat.adapters.ChatAdapter
 import ru.bagrusss.selfchat.data.HelperDB
 import ru.bagrusss.selfchat.eventbus.Message
 import ru.bagrusss.selfchat.services.ServiceHelper
+import ru.bagrusss.selfchat.util.FileStorage
 import ru.bagrusss.selfchat.util.getTime
+import ru.bagrusss.selfchat.util.getTimestamp
+import java.io.File
 
 class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         LoaderManager.LoaderCallbacks<Cursor> {
@@ -61,8 +67,9 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     val KEY_EDITING = "edit_msg"
     val KEY_SERVER = "server"
-    val mHandler = Handler()
     var mProgressDialog: ProgressDialog? = null
+
+    var mImgUri: Uri? = null
 
     class ChatLoader : CursorLoader {
         companion object {
@@ -115,7 +122,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 }
             }
         } else {
-            alertServer(this)
+            alertServer()
         }
         val display = windowManager.defaultDisplay
         val p = Point()
@@ -127,34 +134,33 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     }
 
-    private fun alertServer(c: Context) {
-        val serverDialog = alert {
-            var e: EditText? = null
-            val preferences = PreferenceManager
-                    .getDefaultSharedPreferences(c)
-            customView {
-                val lp = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.MATCH_PARENT)
-                lp.setMargins(resources.getDimensionPixelOffset(R.dimen.fab_margin),
-                        0, resources.getDimensionPixelOffset(R.dimen.fab_margin), 0)
-                e = editText()
-                e?.layoutParams = lp
-                e!!.setText(preferences.getString(KEY_SERVER, ""))
-            }
-            positiveButton(android.R.string.ok) {
-                val server = e!!.text.toString()
-                preferences.edit()
-                        .putString(KEY_SERVER, server)
-                        .apply()
-                initRetrofit(server)
-                dismiss()
-            }
-            title(R.string.enter_server)
-        }
-        serverDialog.cancellable(false)
-        serverDialog.show()
-        serverDialog.dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
+    private fun alertServer() {
+        val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT)
+        lp.setMargins(resources.getDimensionPixelOffset(R.dimen.fab_margin),
+                0, resources.getDimensionPixelOffset(R.dimen.fab_margin), 0)
+        val address = EditText(this)
+        address.layoutParams = lp
+        val preferences = PreferenceManager
+                .getDefaultSharedPreferences(this)
+        address.setText(preferences.getString(KEY_SERVER, "http://172.10.1.10:5000"))
+
+        val serverSelect = AlertDialog.Builder(this)
+                .setTitle(R.string.enter_server)
+                .setView(address)
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, {
+                    dialog, i ->
+                    val server = address.text.toString()
+                    preferences.edit()
+                            .putString(KEY_SERVER, server)
+                            .apply()
+                    initRetrofit(server)
+                    dialog.cancel()
+                }).create()
+        serverSelect.show()
+        serverSelect.window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
@@ -170,10 +176,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     override fun onClick(v: View) {
         when (v.id) {
             R.id.fab_geo -> {
-                mProgressDialog?.show()
-                mHandler.postDelayed({
-                    selectLocation()
-                }, 1000)
+                selectLocation()
             }
             R.id.fab_album -> {
                 selectImg()
@@ -197,9 +200,19 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     }
 
     private fun makePhoto() {
-        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (takePictureIntent.resolveActivity(packageManager) != null) {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        val photo: File?
+        try {
+            photo = FileStorage.createTemporaryFile("IMG_" + getTimestamp(), "jpg")
+        } catch (e: Exception) {
+            Log.e("", e.message)
+            toast(R.string.storage_error)
+            return
+        }
+        mImgUri = Uri.fromFile(photo)
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, mImgUri)
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE)
         }
     }
 
@@ -220,11 +233,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                     }
                 }
                 REQUEST_IMAGE_CAPTURE -> {
-                    if (data != null) {
-                        val extras = data.extras
-                        val bmp = extras.get("data") as Bitmap
-                        saveBitmap(bmp)
-                    }
+                    saveBitmap(mImgUri!!)
                 }
                 REQUEST_LOCATION -> {
                     if (data != null) {
@@ -236,8 +245,8 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         mProgressDialog?.dismiss()
     }
 
-    private fun saveBitmap(bmp: Bitmap) {
-        ServiceHelper.saveBMP(this, bmp, HelperDB.TYPE_IMAGE, getTime(), REQUEST_CODE)
+    private fun saveBitmap(uri: Uri) {
+        ServiceHelper.saveBMP(this, uri, HelperDB.TYPE_IMAGE, getTime(), REQUEST_CODE)
     }
 
     private fun insertImage(uri: String) {

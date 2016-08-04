@@ -2,8 +2,9 @@ package ru.bagrusss.selfchat.services
 
 import android.app.IntentService
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Point
+import android.net.Uri
+import android.util.Log
 import org.greenrobot.eventbus.EventBus
 import org.jetbrains.anko.windowManager
 import ru.bagrusss.selfchat.R
@@ -38,10 +39,11 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
             val action = intent.action
             val reqCode = intent.getIntExtra(PARAM_REQ_CODE, 10)
             val message = Message(reqCode, Message.OK)
+
+            val msg = intent.getStringExtra(PARAM_DATA)
+            val type = intent.getIntExtra(PARAM_TYPE, 1)
             when (action) {
                 ACTION_ADD_MESSAGE -> {
-                    val msg = intent.getStringExtra(PARAM_DATA)
-                    val type = intent.getIntExtra(PARAM_TYPE, 1)
                     try {
                         val (status, id, date, time) = Net.sendMessageAndParse(type, msg)
                         if (status) {
@@ -56,18 +58,23 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
 
                 }
                 ACTION_SAVE_BMP -> {
-                    val bmp = intent.extras.get(PARAM_BMP) as Bitmap
-                    val file = FileStorage.saveBMPtoStorage(bmp)
-                    intent.putExtra(PARAM_DATA, file)
-                    insertToDB(intent)
+                    val bmpPath = intent.extras.get(PARAM_BMP) as Uri
+                    val (status, id, url, date, time) = Net.uploadFile(bmpPath.path)
+                    if (status) {
+                        val display = windowManager.defaultDisplay
+                        val p = Point()
+                        display.getSize(p)
+                        val compressed = FileStorage.compressImg(bmpPath.path, Math.min(p.x, p.y), 0.7f)
+                        //TODO добавть оригинал в базу и переделать адаптер
+                        HelperDB.getInstance(this).insertData(id!!, compressed, date!!, time!!, HelperDB.TYPE_IMAGE)
+                    }
                 }
                 ACTION_SAVE_BMP_COMPRESSED -> {
-                    windowManager
                     val display = windowManager.defaultDisplay
                     val p = Point()
                     display.getSize(p)
                     var file = intent.getStringExtra(PARAM_DATA)
-                    file = FileStorage.saveCompressed(this, p.x, p.y, file)
+                    file = FileStorage.compressBMP(this, p.x, p.y, file)
                     intent.putExtra(PARAM_DATA, file)
                     insertToDB(intent)
                 }
@@ -80,6 +87,7 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
                         val msgs = Net.getMessages(this)
                         HelperDB.getInstance(this).insertMessages(msgs)
                     } catch (e: Exception) {
+                        Log.e("exc ", e.message)
                         message.status = Message.ERROR
                     }
                 }
