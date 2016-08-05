@@ -97,7 +97,8 @@
                 android:layout_alignParentLeft="true"
                 android:layout_centerVertical="true"
                 android:layout_toLeftOf="@+id/send_button"
-                android:hint="@string/message_hint" />
+                android:hint="@string/message_hint"
+                android:maxLines="5" />
 
             <ImageView
                 android:id="@+id/send_button"

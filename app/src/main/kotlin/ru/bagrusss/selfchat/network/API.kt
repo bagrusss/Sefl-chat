@@ -6,6 +6,8 @@ import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import ru.bagrusss.selfchat.network.json.Msg
+import ru.bagrusss.selfchat.network.json.Response
 import java.util.*
 
 /**

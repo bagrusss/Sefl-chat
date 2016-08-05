@@ -12,7 +12,6 @@ import ru.bagrusss.selfchat.data.HelperDB
 import ru.bagrusss.selfchat.eventbus.Message
 import ru.bagrusss.selfchat.network.Net
 import ru.bagrusss.selfchat.util.FileStorage
-import ru.bagrusss.selfchat.util.getDate
 import java.net.SocketTimeoutException
 
 class ProcessorIntentService : IntentService("ProcessorIntentService") {
@@ -21,7 +20,6 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
 
         val ACTION_ADD_MESSAGE = "ru.bagrusss.selfchat.services.action.ACTION_ADD_MESSAGE"
         val ACTION_SAVE_BMP = "ru.bagrusss.selfchat.services.action.ACTION_SAVE_BMP"
-        val ACTION_SAVE_BMP_COMPRESSED = "ru.bagrusss.selfchat.services.action.ACTION_SAVE_BMP_COMPRESSED"
         val ACTION_INIT_RETROFIT = "ru.bagrusss.selfchat.services.action.INIT_RETROFIT"
         val ACTION_UPDATE_MESSAGES = "ru.bagrusss.selfchat.services.action.ACTION_UPDATE_MESSAGES"
 
@@ -40,43 +38,41 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
             val reqCode = intent.getIntExtra(PARAM_REQ_CODE, 10)
             val message = Message(reqCode, Message.OK)
 
-            val msg = intent.getStringExtra(PARAM_DATA)
-            val type = intent.getIntExtra(PARAM_TYPE, 1)
             when (action) {
                 ACTION_ADD_MESSAGE -> {
+                    val msg = intent.getStringExtra(PARAM_DATA)
+                    val type = intent.getIntExtra(PARAM_TYPE, 1)
                     try {
                         val (status, id, date, time) = Net.sendMessageAndParse(type, msg)
                         if (status) {
                             HelperDB.getInstance(this).insertData(id!!, msg, date!!, time!!, type)
+                        } else message.status = Message.ERROR
+                    } catch (e: SocketTimeoutException) {
+                        message.status = Message.ERROR
+                        message.errorText = getString(R.string.timeout)
+                    } catch (e: Exception) {
+                        message.status = Message.ERROR
+                        message.errorText = getString(R.string.something_wrong)
+                    }
+
+                }
+                ACTION_SAVE_BMP -> {
+                    val bmpUri = intent.extras.get(PARAM_BMP) as Uri
+                    try {
+                        val (status, id, url, date, time) = Net.uploadFile(bmpUri.path)
+                        if (status) {
+                            saveCompessed(bmpUri.path, id!!, date!!, time!!)
+                        } else {
+                            message.status = Message.ERROR
+                            message.errorText = getString(R.string.cant_connect)
                         }
                     } catch (e: SocketTimeoutException) {
                         message.status = Message.ERROR
                         message.errorText = getString(R.string.timeout)
                     } catch (e: Exception) {
-
+                        message.status = Message.ERROR
+                        message.errorText = getString(R.string.something_wrong)
                     }
-
-                }
-                ACTION_SAVE_BMP -> {
-                    val bmpPath = intent.extras.get(PARAM_BMP) as Uri
-                    val (status, id, url, date, time) = Net.uploadFile(bmpPath.path)
-                    if (status) {
-                        val display = windowManager.defaultDisplay
-                        val p = Point()
-                        display.getSize(p)
-                        val compressed = FileStorage.compressImg(bmpPath.path, Math.min(p.x, p.y), 0.7f)
-                        //TODO добавть оригинал в базу и переделать адаптер
-                        HelperDB.getInstance(this).insertData(id!!, compressed, date!!, time!!, HelperDB.TYPE_IMAGE)
-                    }
-                }
-                ACTION_SAVE_BMP_COMPRESSED -> {
-                    val display = windowManager.defaultDisplay
-                    val p = Point()
-                    display.getSize(p)
-                    var file = intent.getStringExtra(PARAM_DATA)
-                    file = FileStorage.compressBMP(this, p.x, p.y, file)
-                    intent.putExtra(PARAM_DATA, file)
-                    insertToDB(intent)
                 }
                 ACTION_INIT_RETROFIT -> {
                     Net.initAPI(intent.getStringExtra(PARAM_HTTP_URL))
@@ -84,11 +80,35 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
                 }
                 ACTION_UPDATE_MESSAGES -> {
                     try {
-                        val msgs = Net.getMessages(this)
-                        HelperDB.getInstance(this).insertMessages(msgs)
+                        val msgs = Net.getMessages()
+                        val lastMsg = HelperDB.getInstance(this).getLastMessageId()
+                        var current = 0
+                        for (msg in msgs) {
+                            if (msg.timestamp > lastMsg)
+                                break
+                            ++current
+                        }
+                        //только новые
+                        msgs.subList(0, current).clear()
+                        var fileImg: String?
+                        for (msg in msgs) {
+                            if (msg.type == HelperDB.TYPE_IMAGE) {
+                                fileImg = Net.downloadFile(msg.data)
+                                if (fileImg != null)
+                                    saveCompessed(fileImg, msg.timestamp, msg.date, msg.time)
+                            } else {
+                                HelperDB.getInstance(this)
+                                        .insertData(msg.timestamp, msg.data, msg.date, msg.time, HelperDB.TYPE_TEXT)
+                            }
+                        }
+
+                    } catch (e: SocketTimeoutException) {
+                        message.status = Message.ERROR
+                        message.errorText = getString(R.string.timeout)
                     } catch (e: Exception) {
                         Log.e("exc ", e.message)
                         message.status = Message.ERROR
+                        message.errorText = getString(R.string.something_wrong)
                     }
                 }
 
@@ -97,13 +117,17 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
         }
     }
 
+    private fun saveCompessed(path: String, id: Long, date: String, time: String) {
+        val p = getDisplayResolution()
+        val compressed = FileStorage.compressImg(path, Math.max(p.x, p.y), 0.65f)
+        HelperDB.getInstance(this).insertData(id, compressed, date, time, HelperDB.TYPE_IMAGE)
+    }
 
-    fun insertToDB(intent: Intent) {
-        val msg = intent.getStringExtra(PARAM_DATA)
-        val type = intent.getIntExtra(PARAM_TYPE, 1)
-        val time = intent.getStringExtra(PARAM_TIME)
-        HelperDB.getInstance(this)
-                .insertData(0, msg, getDate(), time, type)
+    private fun getDisplayResolution(): Point {
+        val display = windowManager.defaultDisplay
+        val p = Point()
+        display.getSize(p)
+        return p
     }
 
 }

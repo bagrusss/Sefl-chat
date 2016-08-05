@@ -66,7 +66,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             val file = FileStorage.saveBMPtoStorage(b)
             runOnUiThread {
                 val intent = Intent()
-                intent.data = Uri.parse(file)
+                intent.data = Uri.fromFile(file)
                 setResult(Activity.RESULT_OK, intent)
                 finish()
             }

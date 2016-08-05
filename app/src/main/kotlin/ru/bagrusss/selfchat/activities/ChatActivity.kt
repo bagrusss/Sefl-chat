@@ -7,7 +7,6 @@ import android.content.CursorLoader
 import android.content.Intent
 import android.content.Loader
 import android.database.Cursor
-import android.graphics.Point
 import android.net.Uri
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -29,6 +28,7 @@ import com.github.clans.fab.FloatingActionMenu
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.jetbrains.anko.connectivityManager
 import org.jetbrains.anko.find
 import org.jetbrains.anko.inputMethodManager
 import org.jetbrains.anko.toast
@@ -39,7 +39,6 @@ import ru.bagrusss.selfchat.eventbus.Message
 import ru.bagrusss.selfchat.services.ServiceHelper
 import ru.bagrusss.selfchat.util.FileStorage
 import ru.bagrusss.selfchat.util.getTime
-import ru.bagrusss.selfchat.util.getTimestamp
 import java.io.File
 
 class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
@@ -121,13 +120,13 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                     mSendButton?.isEnabled = false
                 }
             }
+            loaderManager.initLoader(ChatLoader.ID, null, this)
+            mProgressDialog = ProgressDialog.show(this, "", getString(R.string.loading), true)
+            mProgressDialog?.setIndeterminateDrawable(resources.getDrawable(R.drawable.progressbar_handler))
         } else {
             alertServer()
         }
-        val display = windowManager.defaultDisplay
-        val p = Point()
-        display.getSize(p)
-        mAdapter = ChatAdapter(p.x, p.y)
+        mAdapter = ChatAdapter()
         val lm = LinearLayoutManager(this)
         mRecyclerView?.layoutManager = lm
         mRecyclerView?.adapter = mAdapter
@@ -174,24 +173,26 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     }
 
     override fun onClick(v: View) {
-        when (v.id) {
-            R.id.fab_geo -> {
-                selectLocation()
+        if (checkInternet())
+            when (v.id) {
+                R.id.fab_geo -> {
+                    selectLocation()
+                }
+                R.id.fab_album -> {
+                    selectImg()
+                }
+                R.id.fab_camera -> {
+                    makePhoto()
+                }
+                R.id.fab_text -> {
+                    mMessageView?.visibility = View.VISIBLE
+                    mFabMenu?.hideMenu(true)
+                    mTextMessage?.requestFocus()
+                    val imm = inputMethodManager
+                    imm.showSoftInput(mTextMessage, 0)
+                }
             }
-            R.id.fab_album -> {
-                selectImg()
-            }
-            R.id.fab_camera -> {
-                makePhoto()
-            }
-            R.id.fab_text -> {
-                mMessageView?.visibility = View.VISIBLE
-                mFabMenu?.hideMenu(true)
-                mTextMessage?.requestFocus()
-                val imm = inputMethodManager
-                imm.showSoftInput(mTextMessage, 0)
-            }
-        }
+        else toast(R.string.no_internet)
         mFabMenu?.close(true)
     }
 
@@ -203,7 +204,7 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         val photo: File?
         try {
-            photo = FileStorage.createTemporaryFile("IMG_" + getTimestamp(), "jpg")
+            photo = FileStorage.createTemporaryFile("jpg")
         } catch (e: Exception) {
             Log.e("", e.message)
             toast(R.string.storage_error)
@@ -225,11 +226,12 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode === RESULT_OK)
+        if (resultCode === RESULT_OK) {
             when (requestCode) {
                 PICK_IMAGE_REQUEST -> {
                     if (data != null && data.data != null) {
-                        insertImage(data.data.toString())
+                        val fileUri = FileStorage.getFileURI(this, data.data)
+                        saveBitmap(fileUri)
                     }
                 }
                 REQUEST_IMAGE_CAPTURE -> {
@@ -237,21 +239,21 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 }
                 REQUEST_LOCATION -> {
                     if (data != null) {
-                        insertImage(data.data.toString())
+                        saveBitmap(data.data)
                     }
                 }
-
             }
-        mProgressDialog?.dismiss()
+            mProgressDialog?.show()
+        }
     }
 
     private fun saveBitmap(uri: Uri) {
         ServiceHelper.saveBMP(this, uri, HelperDB.TYPE_IMAGE, getTime(), REQUEST_CODE)
     }
 
-    private fun insertImage(uri: String) {
-        ServiceHelper.saveBMPCompressed(this, uri, HelperDB.TYPE_IMAGE,
-                getTime(), REQUEST_CODE)
+    private fun checkInternet(): Boolean {
+        val cm = connectivityManager
+        return cm.activeNetworkInfo.isConnectedOrConnecting
     }
 
     private fun updateChat() {
@@ -316,11 +318,11 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
                 return
             }
             if (m.status == Message.RETROFIT_READY) {
-                loaderManager.initLoader(ChatLoader.ID, null, this)
                 updateMessages()
                 return
             }
             toast(m.errorText)
+            mProgressDialog?.dismiss()
         }
     }
 

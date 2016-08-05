@@ -9,9 +9,11 @@
     <string name="temp_time">10:20:25</string>
     <string name="select_img">Галерея</string>
     <string name="temp_msg">New Text\ntext</string>
-    <string name="loading">Загрузка</string>
+    <string name="loading">Загрузка…</string>
     <string name="enter_server">Адрес сервера</string>
     <string name="cant_connect">Cервер недоступен</string>
     <string name="timeout">Долгое время ответа. Возможо у Вас плохое качество связи</string>
     <string name="storage_error">Ошибка хранилища</string>
+    <string name="no_internet">Проверьте сетевое подключение</string>
+    <string name="something_wrong">Упс! что-то пошло не так</string>
 </resources>

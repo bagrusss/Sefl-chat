@@ -1,4 +1,4 @@
-package ru.bagrusss.selfchat.network
+package ru.bagrusss.selfchat.network.json
 
 import com.google.gson.annotations.SerializedName
 

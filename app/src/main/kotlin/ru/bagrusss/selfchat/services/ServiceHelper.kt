@@ -40,15 +40,6 @@ object ServiceHelper {
         }
     }
 
-    fun saveBMPCompressed(context: Context, url: String, type: Int, time: String, reqCode: Int) {
-        val intent = prepareIntent(context, type, null, reqCode, time)
-        with(intent) {
-            action = ProcessorIntentService.ACTION_SAVE_BMP_COMPRESSED
-            putExtra(ProcessorIntentService.PARAM_DATA, url)
-            context.startService(this)
-        }
-    }
-
     @JvmStatic
     fun initRetrofit(context: Context, server: String) {
         with(Intent(context, ProcessorIntentService::class.java)) {

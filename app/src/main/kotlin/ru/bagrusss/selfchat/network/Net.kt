@@ -1,7 +1,5 @@
 package ru.bagrusss.selfchat.network
 
-import android.content.Context
-import android.net.Uri
 import android.util.Log
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
@@ -12,10 +10,13 @@ import okhttp3.RequestBody
 import org.apache.commons.io.FilenameUtils
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import ru.bagrusss.selfchat.data.HelperDB
+import ru.bagrusss.selfchat.network.json.Msg
+import ru.bagrusss.selfchat.network.json.Response
+import ru.bagrusss.selfchat.util.FileStorage
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -88,19 +89,9 @@ object Net {
     }
 
     @JvmStatic
-    fun getMessages(c: Context): List<Msg> {
+    fun getMessages(): ArrayList<Msg> {
         val res = Net.getAPI().messages().execute().body()
-        val msgs = res.data
-        val lastMsg = HelperDB.getInstance(c).getLastMessageId()
-        var current = 0
-        for (msg in msgs!!) {
-            if (msg.timestamp > lastMsg) {
-                break
-            }
-            ++current
-        }
-        msgs.subList(0, current).clear()
-        return msgs
+        return res.data!!
     }
 
     //Загружать и выгружить можно и через Retrofit, но это не эффективно
@@ -109,7 +100,6 @@ object Net {
 
     @JvmStatic
     fun uploadFile(file: String): Result5 {
-        val path = Uri.parse(file).path
         val url = URL(BASE_URL + UPLOAD_URL)
         val connection = url.openConnection() as HttpURLConnection
         var time: String? = null
@@ -122,7 +112,7 @@ object Net {
                 useCaches = false
                 doOutput = true
                 requestMethod = "POST"
-                setRequestProperty("Content-type", "image/" + FilenameUtils.getExtension(path))
+                setRequestProperty("Content-type", "image/" + FilenameUtils.getExtension(file))
                 connect()
             }
             val lineEnd = "\r\n"
@@ -130,7 +120,7 @@ object Net {
             val boundary = "*****"
             val dos = DataOutputStream(connection.outputStream)
             dos.use {
-                FileInputStream(File(path)).use {
+                FileInputStream(File(file)).use {
                     var bytesAvailable = it.available()
                     var bufferSize = Math.min(bytesAvailable, 2048)
                     val buffer = ByteArray(bufferSize)
@@ -157,7 +147,7 @@ object Net {
             data = msg.data
             time = msg.time
             status = true
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Log.e("upload", e.message)
         } finally {
             connection.disconnect()
@@ -165,8 +155,40 @@ object Net {
         return Result5(status, id, data, date, time)
     }
 
-    fun downloadFile(url: String) {
-
+    @JvmStatic
+    fun downloadFile(path: String): String? {
+        val url = URL(BASE_URL + path)
+        var filePath: String? = null
+        val connection = url.openConnection() as HttpURLConnection
+        try {
+            with(connection) {
+                useCaches = false
+                requestMethod = "GET"
+                connect()
+            }
+            val ext = connection.getHeaderField("Content-Type").replace("image/", "")
+            val data = ByteArray(2048)
+            val file = FileStorage.createTemporaryFile(ext)
+            val fos = FileOutputStream(file)
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                fos.use {
+                    connection.inputStream.use {
+                        var count = it.read(data)
+                        while (count != -1) {
+                            fos.write(data, 0, count)
+                            count = it.read(data)
+                        }
+                    }
+                }
+                filePath = file.absolutePath
+            }
+        } catch (e: IOException) {
+            Log.e("upload", e.message)
+            filePath = null
+        } finally {
+            connection.disconnect()
+        }
+        return filePath
     }
 
 }

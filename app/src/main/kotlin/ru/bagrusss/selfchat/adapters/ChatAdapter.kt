@@ -1,7 +1,6 @@
 package ru.bagrusss.selfchat.adapters
 
 import android.database.Cursor
-import android.graphics.Bitmap
 import android.net.Uri
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -9,43 +8,21 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import com.squareup.picasso.Callback
 import com.squareup.picasso.Picasso
-import com.squareup.picasso.Transformation
 import org.jetbrains.anko.find
 import ru.bagrusss.selfchat.R
 import ru.bagrusss.selfchat.data.HelperDB
 import ru.bagrusss.selfchat.util.CursorAdapterRecycler
-import ru.bagrusss.selfchat.util.FileStorage
 import java.io.File
 
 /**
  * Created by bagrusss.
  */
-class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolder>() {
+class ChatAdapter() : CursorAdapterRecycler<RecyclerView.ViewHolder>() {
 
     val TYPE_TEXT = HelperDB.TYPE_TEXT
     val TYPE_IMAGE = HelperDB.TYPE_IMAGE
     val TYPE_DATE = HelperDB.TYPE_DATE
-
-    val sizeX = x
-    val sizeY = y
-
-    inner class ImageTransformation(x: Int, y: Int) : Transformation {
-
-        val X = x
-        val Y = y
-
-        override fun key(): String {
-            return "ImageTransformation"
-        }
-
-        override fun transform(source: Bitmap): Bitmap {
-            return FileStorage.decodeBMPtoScreenSize(X, Y, source)
-        }
-
-    }
-
 
     inner abstract class BaseHolder(v: View) : RecyclerView.ViewHolder(v) {
         var timeDateView: TextView? = null
@@ -95,16 +72,7 @@ class ChatAdapter(x: Int, y: Int) : CursorAdapterRecycler<RecyclerView.ViewHolde
         Picasso.with(holder.image.context)
                 .load(Uri.fromFile(File(file)))
                 .error(R.drawable.album_grey)
-                .transform(ImageTransformation(sizeX, sizeY))
-                .into(holder.image, object : Callback {
-                    override fun onSuccess() {
-                        holder.image.adjustViewBounds = true
-                    }
-
-                    override fun onError() {
-                        holder.image.adjustViewBounds = false
-                    }
-                })
+                .into(holder.image)
     }
 
     private fun bindDate(holder: DateHolder, c: Cursor) {
