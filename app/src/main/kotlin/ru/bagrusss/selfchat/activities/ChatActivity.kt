@@ -122,7 +122,6 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
             }
             loaderManager.initLoader(ChatLoader.ID, null, this)
             mProgressDialog = ProgressDialog.show(this, "", getString(R.string.loading), true)
-            mProgressDialog?.setIndeterminateDrawable(resources.getDrawable(R.drawable.progressbar_handler))
         } else {
             alertServer()
         }
