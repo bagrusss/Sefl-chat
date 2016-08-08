@@ -106,7 +106,7 @@ class ProcessorIntentService : IntentService("ProcessorIntentService") {
                         message.status = Message.ERROR
                         message.errorText = getString(R.string.timeout)
                     } catch (e: Exception) {
-                        Log.e("exc ", e.message)
+                        //Log.e("exc ", e.message)
                         message.status = Message.ERROR
                         message.errorText = getString(R.string.something_wrong)
                     }
