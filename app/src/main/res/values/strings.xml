@@ -16,4 +16,5 @@
     <string name="storage_error">Ошибка хранилища</string>
     <string name="no_internet">Проверьте сетевое подключение</string>
     <string name="something_wrong">Упс! что-то пошло не так</string>
+    <string name="action_cancelled">Действие отменено</string>
 </resources>
