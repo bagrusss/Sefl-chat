@@ -225,28 +225,26 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == RESULT_OK) {
-            if (data != null) {
-                when (requestCode) {
-                    PICK_IMAGE_REQUEST -> {
-                        if (data.data != null) {
-                            val fileUri = FileStorage.getFileURI(this, data.data)
-                            saveBitmap(fileUri)
-                        }
-                    }
-                    REQUEST_IMAGE_CAPTURE -> {
-                        if (mImgUri != null)
-                            saveBitmap(mImgUri!!)
-                    }
-                    REQUEST_LOCATION -> {
-                        if (data.data != null) {
-                            saveBitmap(data.data)
-                        }
+        if (resultCode === RESULT_OK) {
+            when (requestCode) {
+                PICK_IMAGE_REQUEST -> {
+                    if (data != null && data.data != null) {
+                        val fileUri = FileStorage.getFileURI(this, data.data)
+                        saveBitmap(fileUri)
                     }
                 }
-            } else toast(R.string.action_cancelled)
+                REQUEST_IMAGE_CAPTURE -> {
+                    if (mImgUri != null)
+                        saveBitmap(mImgUri!!)
+                }
+                REQUEST_LOCATION -> {
+                    if (data != null) {
+                        saveBitmap(data.data)
+                    }
+                }
+            }
+            mProgressDialog?.show()
         }
-        mProgressDialog?.show()
     }
 
     private fun saveBitmap(uri: Uri) {
