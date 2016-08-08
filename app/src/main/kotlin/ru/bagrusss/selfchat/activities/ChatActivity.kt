@@ -229,21 +229,30 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
             when (requestCode) {
                 PICK_IMAGE_REQUEST -> {
                     if (data != null && data.data != null) {
+                        mProgressDialog?.show()
                         val fileUri = FileStorage.getFileURI(this, data.data)
                         saveBitmap(fileUri)
+                        return
                     }
+                    mProgressDialog?.dismiss()
                 }
                 REQUEST_IMAGE_CAPTURE -> {
-                    if (mImgUri != null)
+                    if (mImgUri != null) {
+                        mProgressDialog?.show()
                         saveBitmap(mImgUri!!)
+                        return
+                    }
+                    mProgressDialog?.dismiss()
                 }
                 REQUEST_LOCATION -> {
                     if (data != null) {
+                        mProgressDialog?.show()
                         saveBitmap(data.data)
+                        return
                     }
+                    mProgressDialog?.dismiss()
                 }
             }
-            mProgressDialog?.show()
         }
     }
 
