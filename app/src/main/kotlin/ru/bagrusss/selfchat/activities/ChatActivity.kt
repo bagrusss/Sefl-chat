@@ -261,8 +261,8 @@ class ChatActivity : AppCompatActivity(), View.OnClickListener, TextWatcher,
     }
 
     private fun checkInternet(): Boolean {
-        val cm = connectivityManager
-        return cm.activeNetworkInfo.isConnectedOrConnecting
+        val info = connectivityManager.activeNetworkInfo
+        return info != null && info.isConnected
     }
 
     private fun updateChat() {
